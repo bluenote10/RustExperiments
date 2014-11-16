@@ -1,0 +1,12 @@
+[package]
+
+name = "riftlib"
+version = "0.0.1"
+authors = [ "Your name <you@example.com>" ]
+
+[[bin]]
+
+name = "hello_world"
+
+
+
