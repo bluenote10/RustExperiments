@@ -4,6 +4,7 @@
 #![allow(unused_assignments)]
 
 extern crate riftlib;
+extern crate libc;
 
 use riftlib::glmath;
 
@@ -107,6 +108,108 @@ fn reference_reassignment() {
 
 
 }
+
+
+#[test]
+fn experiments_with_bit_flags_alternative1() {
+
+  use libc::c_uint;
+
+  trait FlagIsReadable {
+    fn get(&self, mask: c_uint) -> bool;
+  }
+  trait FlagIsWriteable {
+    fn set(&self, mask: c_uint, new_state: bool) -> c_uint;
+  }
+
+  struct ReadableFlag {
+    flag: c_uint,
+  }
+  impl FlagIsReadable for ReadableFlag {
+    fn get(&self, mask: c_uint) -> bool {
+      mask & self.flag == self.flag
+    }
+  }
+
+  struct WriteableFlag {
+    flag: c_uint,
+  }
+  impl FlagIsReadable for WriteableFlag {
+    fn get(&self, mask: c_uint) -> bool {
+      mask & self.flag == self.flag
+    }
+  }
+  impl FlagIsWriteable for WriteableFlag {
+    fn set(&self, mask: c_uint, new_state: bool) -> c_uint {
+      match new_state {
+        true  => mask |  self.flag,
+        false => mask & !self.flag,
+      }
+    }
+  }
+  
+  /*
+  struct StateTest {
+    is_working: ReadableFlag,
+    can_be_changed:
+  }
+  */
+
+}
+
+
+#[test]
+fn experiments_with_bit_flags_alternative2() {
+  use libc::c_uint;
+    
+  trait HasMask{
+    
+    pub fn new(init_mask: c_uint) -> Self;
+    fn mask(&self) -> c_uint;
+
+    fn get_flag(&self, flag: c_uint) -> bool {
+      self.mask() & flag == flag
+    }
+    fn set_flag(&self, flag: c_uint, new_state: bool) -> Self {
+      let init_mask = match new_state {
+        true  => self.mask() |  flag,
+        false => self.mask() & !flag,
+      };
+      HasMask::new(init_mask)
+    }
+  }
+  
+  struct SomeBitMask {
+    mask: c_uint,
+  }
+  impl HasMask for SomeBitMask {
+    fn new(init_mask: c_uint) -> SomeBitMask { SomeBitMask{ mask: init_mask } }
+    fn mask(&self) -> c_uint { self.mask }
+  }
+  impl SomeBitMask {
+    // bit getter
+    fn get_first_bit (&self) -> bool { self.get_flag(0x0001) }
+    fn get_second_bit(&self) -> bool { self.get_flag(0x0002) }
+    fn get_third_bit (&self) -> bool { self.get_flag(0x0004) }
+    fn get_forth_bit (&self) -> bool { self.get_flag(0x0008) }
+    // bit setter
+    fn set_third_bit (&self, state: bool) -> SomeBitMask { self.set_flag(0x0004, state) }
+  }
+  
+  let bm1: SomeBitMask = HasMask::new(0).set_third_bit(true);
+  
+  assert_eq!(bm1.get_first_bit(), false)
+  assert_eq!(bm1.get_second_bit(), false)
+  assert_eq!(bm1.get_third_bit(), true)
+  
+  let bm2 = bm1.set_third_bit(false);
+  
+  assert_eq!(bm1.get_third_bit(), true)
+  assert_eq!(bm2.get_third_bit(), false)
+}
+
+
+
 
 
 
