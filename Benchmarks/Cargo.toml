@@ -1,5 +1,5 @@
 [package]
-name = "Benchmarks"
+name = "mycrate"
 version = "0.1.0"
 authors = ["Fabian Keller <github.100.fkeller@spamgourmet.com>"]
 edition = "2018"
@@ -7,7 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
+geo-types = { version = "0.4", default-features = false }
+num-traits = "0.2"
+robust = "0.1"
 
 [dev-dependencies]
 criterion = "0.3"
@@ -15,7 +17,7 @@ criterion-cycles-per-byte = "0.1.1"
 rand = "*"
 
 [[bench]]
-name = "custom"
+name = "float_ops"
 harness = false
 
 # may try:
