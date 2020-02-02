@@ -84,12 +84,43 @@ fn bench_abs2(c: &mut Criterion) {
 }
 
 
+fn compare_small(c: &mut Criterion) {
+    use criterion::black_box;
+
+    let mut group = c.benchmark_group("small");
+    /*
+    group.bench_with_input("unlooped", &10, |b, i| b.iter(|| i + 10));
+    group.bench_with_input("looped", &10, |b, i| b.iter(|| {
+        for _ in 0..10000 {
+            black_box(i + 10);
+        }
+    }));
+    */
+    group.bench_function("noop (const)", |b| b.iter(|| 1.0));
+    group.bench_function("noop (const black_box)", |b| b.iter(|| black_box(1.0)));
+    group.bench_function("noop (call)", |b| b.iter(|| noop(1.0)));
+    group.bench_function("noop (call black_box)", |b| b.iter(|| noop(black_box(1.0))));
+    group.bench_with_input("input noop (nothing)", &0.0, |b, x| b.iter(|| x));
+    group.bench_with_input("input noop (deref)", &0.0, |b, x| b.iter(|| *x));
+    group.bench_with_input("input noop (call)", &0.0, |b, x| b.iter(|| noop(*x)));
+    group.bench_with_input("input noop (call, no-deref)", &0.0, |b, &x| b.iter(|| noop(x)));
+    group.bench_with_input("abs1(0.0)", &0.0, |b, &x| b.iter(|| abs1(black_box(x))));
+    group.bench_with_input("abs1(1.0)", &1.0, |b, &x| b.iter(|| abs1(black_box(x))));
+    group.bench_with_input("abs1(-1.0)", &-1.0, |b, &x| b.iter(|| abs1(black_box(x))));
+    group.bench_with_input("abs2(0.0)", &0.0, |b, &x| b.iter(|| abs2(black_box(x))));
+    group.bench_with_input("abs2(1.0)", &1.0, |b, &x| b.iter(|| abs2(black_box(x))));
+    group.bench_with_input("abs2(-1.0)", &-1.0, |b, &x| b.iter(|| abs2(black_box(x))));
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
-    bench_noop,
-    bench_abs1,
-    bench_abs2,
-    bench_old,
+    //bench_noop,
+    //bench_abs1,
+    //bench_abs2,
+    //bench_old,
+    compare_small
 );
 criterion_main!(benches);
 
