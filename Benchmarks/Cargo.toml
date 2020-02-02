@@ -14,7 +14,7 @@ criterion = "0.3"
 rand = "*"
 
 [[bench]]
-name = "basic"
+name = "custom"
 harness = false
 
 # may try:
