@@ -38,8 +38,50 @@ fn custom(c: &mut Criterion) {
     c.bench_function("test", |b| b.iter_custom(|iters| {
         bench_function_with_noop(
             iters,
-            || noop(black_box(1.0_f64)),
+            || black_box(1.0_f64),
             || black_box(1.0_f64).abs(),
+        )
+    }));
+
+    c.bench_function("add_one_op (standard)", |b| b.iter(
+        || black_box(1) + black_box(1)
+    ));
+    c.bench_function("add_ten_ops (standard)", |b| b.iter(
+        || black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1)
+    ));
+
+    c.bench_function("add_one_op (subtractive)", |b| b.iter_custom(|iters| {
+        bench_function_with_noop(
+            iters,
+            || black_box(1),
+            || black_box(1) + black_box(1),
+        )
+    }));
+    c.bench_function("add_ten_ops (subtractive)", |b| b.iter_custom(|iters| {
+        bench_function_with_noop(
+            iters,
+            || black_box(1),
+            || black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1),
         )
     }));
 
