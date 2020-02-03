@@ -1,6 +1,6 @@
 extern crate rand;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BatchSize};
 
 use std::time::{Duration, Instant};
 
@@ -34,6 +34,10 @@ fn noop<T>(x: T) -> T {
     x
 }
 
+fn add_three(a: i64, b: i64, c: i64) -> i64 {
+    a + b + c
+}
+
 fn custom(c: &mut Criterion) {
     c.bench_function("test", |b| b.iter_custom(|iters| {
         bench_function_with_noop(
@@ -42,6 +46,26 @@ fn custom(c: &mut Criterion) {
             || black_box(1.0_f64).abs(),
         )
     }));
+
+    /*
+    c.bench_function("noop batched", move |b| {
+        b.iter_batched(|| &0, |&x| black_box(x), BatchSize::SmallInput)
+    });
+    */
+    /*
+    c.bench_function("single black_box", |b| b.iter(
+        || (black_box(1.0_f64)).cos()
+    ));
+    c.bench_function("three black_box", |b| b.iter(
+        || (black_box(black_box(black_box(1.0_f64)))).cos()
+    ));
+    */
+    c.bench_function("single arg black_box", |b| b.iter(
+        || add_three(black_box(1), 1, 1)
+    ));
+    c.bench_function("all args black_box", |b| b.iter(
+        || add_three(black_box(1), black_box(1), black_box(1))
+    ));
 
     c.bench_function("add_one_op (standard)", |b| b.iter(
         || black_box(1) + black_box(1)
