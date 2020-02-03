@@ -27,6 +27,9 @@ where
         coordinate_to_robust(p1),
         coordinate_to_robust(p2),
     );
+    //res *= -F::one()
+    F::from(res).unwrap()
+    /*
     if res > 0f64 {
         F::one()
     } else if res < 0f64 {
@@ -34,6 +37,7 @@ where
     } else {
         F::zero()
     }
+    */
 }
 
 #[inline]
@@ -100,7 +104,7 @@ where
     }
 }
 
-fn intersection_impl<F>(
+pub fn intersection_impl<F>(
     a1: Coordinate<F>,
     a2: Coordinate<F>,
     b1: Coordinate<F>,
@@ -109,6 +113,7 @@ fn intersection_impl<F>(
 where
     F: Float,
 {
+    println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
     let va = Coordinate {
         x: a2.x - a1.x,
         y: a2.y - a1.y,
@@ -142,6 +147,8 @@ where
             return LineIntersection::Point(mid_point(b1, t, vb));
         }
 
+        println!("s = {:?} => {:?}", s, mid_point(a1, s, va));
+        //return LineIntersection::Point(mid_point(b1, t, vb));
         return LineIntersection::Point(mid_point(a1, s, va));
     }
 
@@ -178,10 +185,12 @@ fn mid_point<F>(p: Coordinate<F>, s: F, d: Coordinate<F>) -> Coordinate<F>
 where
     F: Float,
 {
-    Coordinate {
+    let result = Coordinate {
         x: p.x + s * d.x,
         y: p.y + s * d.y,
-    }
+    };
+    println!("{:?} {:?} {:?} {:?}", p, s, d, result);
+    result
 }
 
 #[inline]
