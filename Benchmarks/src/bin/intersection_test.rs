@@ -1,12 +1,17 @@
 extern crate mycrate;
+extern crate rand;
+
 use geo_types::Coordinate;
 
 use mycrate::{intersection_impl, signed_area, signed_area_fast, LineIntersection, Float};
 
 use float_extras::f64::nextafter;
+use rand::Rng;
+
 
 pub trait NextAfter {
     fn nextafter(self, up: bool) -> Self;
+    fn nextafter_steps(self, steps: i32) -> Self;
 }
 
 impl NextAfter for f64 {
@@ -16,6 +21,14 @@ impl NextAfter for f64 {
         } else {
             nextafter(self, std::f64::NEG_INFINITY)
         }
+    }
+
+    fn nextafter_steps(self, steps: i32) -> Self {
+        let mut x = self;
+        for _ in 0..steps.abs() {
+            x = x.nextafter(steps > 0);
+        }
+        x
     }
 }
 
@@ -65,27 +78,8 @@ fn get_ulp(x: f64) -> f64 {
     x.nextafter(true) - x
 }
 
-fn ulp_test() {
-    println!("{}", get_ulp(1.0));
-    println!("{}", get_ulp(1.0.nextafter(false)));
-    let mut x = 2.0 - 1e-10;
-    let mut ulp = get_ulp(x);
-    while x < 2.1 {
-        let next_x = x.nextafter(true);
-        let next_ulp = get_ulp(next_x);
-        if next_ulp != ulp {
-            println!("{} {}", next_x, next_ulp);
-            ulp = next_ulp;
-        }
-        //println!("{} {}", x, ulp);
-        x = next_x;
-    }
-}
 
-fn main() {
-    ulp_test();
-    println!("Testing...");
-
+fn refinement_test() {
     //Coordinate { x: -98.0, y: 530.0 } Coordinate { x: 530.0, y: 530.0 } Coordinate { x: 1.250012525025, y: 531.0 } Coordinate { x: 1.2500125250252, y: -531.0 }
     //s = 0.15804142121819267 => Coordinate { x: 1.2500125250249994, y: 530.0 }
     let a1 = Coordinate { x: -98.0, y: 530.0 };
@@ -109,4 +103,70 @@ fn main() {
 
     let best = refine(a1, a2, b1, b2, inter, signed_area(a1, a2, inter).abs() + signed_area(b1, b2, inter).abs());
     println!("best found: {:?}", best);
+}
+
+
+fn ulp_test() {
+    println!("{}", get_ulp(1.0));
+    println!("{}", get_ulp(1.0.nextafter(false)));
+    let mut x = 2.0 - 1e-10;
+    let mut ulp = get_ulp(x);
+    while x < 2.1 {
+        let next_x = x.nextafter(true);
+        let next_ulp = get_ulp(next_x);
+        if next_ulp != ulp {
+            println!("{} {}", next_x, next_ulp);
+            ulp = next_ulp;
+        }
+        //println!("{} {}", x, ulp);
+        x = next_x;
+    }
+}
+
+
+fn random_coord() -> Coordinate<f64> {
+    let mut rng = rand::thread_rng();
+    Coordinate{x: rng.gen_range(-1e9, 1e9), y: rng.gen_range(-1e9, 1e9)}
+}
+
+
+fn signed_area_precision_test() {
+    let n = 1000;
+    let mut i = 0;
+    let mut found = 0;
+    while found < 100 {
+        let a = random_coord();
+        let b = random_coord();
+        let c = random_coord();
+        let sa_exact = signed_area(a, b, c);
+        let sa_fast = signed_area_fast(a, b, c);
+        let diff = sa_fast - sa_exact;
+        if diff != 0.0 {
+            println!("{:?} {:?} {:?} {} {}", a, b, c, diff, i);
+            found += 1;
+        }
+        i += 1;
+    }
+}
+
+
+fn compare_signed_area(ax: f64, ay: f64, bx: f64, by: f64, cx: f64, cy: f64) {
+    let a = Coordinate{x: ax, y: ay};
+    let b = Coordinate{x: bx, y: by};
+    let c = Coordinate{x: cx, y: cy};
+    let sa_exact = signed_area(a, b, c);
+    let sa_fast = signed_area_fast(a, b, c);
+    let diff = sa_fast - sa_exact;
+    println!("{} {} {} {:?} {:?} {:?}", diff, sa_fast, sa_exact, a, b, c);
+}
+
+
+fn main() {
+    // ulp_test();
+
+    //compare_signed_area(1000., 1000., -1000., -1000., 0., 0_f64.nextafter_steps(1000));
+    //compare_signed_area(1000., 1000., 0., 1e-13, -1000., -1000.); // <= apparently it is possible to overestimate
+    compare_signed_area(0., 1e-13, 1000., 1000., -1000., -1000.);
+    // signed_area_precision_test();
+
 }

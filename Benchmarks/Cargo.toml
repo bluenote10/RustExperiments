@@ -11,11 +11,11 @@ geo-types = { version = "0.4", default-features = false }
 num-traits = "0.2"
 robust = "0.1"
 float_extras = "*"
+rand = "*"
 
 [dev-dependencies]
 criterion = "0.3"
 criterion-cycles-per-byte = "0.1.1"
-rand = "*"
 
 [[bench]]
 name = "custom"
