@@ -61,30 +61,52 @@ where
 }
 
 
+fn get_ulp(x: f64) -> f64 {
+    x.nextafter(true) - x
+}
+
+fn ulp_test() {
+    println!("{}", get_ulp(1.0));
+    println!("{}", get_ulp(1.0.nextafter(false)));
+    let mut x = 2.0 - 1e-10;
+    let mut ulp = get_ulp(x);
+    while x < 2.1 {
+        let next_x = x.nextafter(true);
+        let next_ulp = get_ulp(next_x);
+        if next_ulp != ulp {
+            println!("{} {}", next_x, next_ulp);
+            ulp = next_ulp;
+        }
+        //println!("{} {}", x, ulp);
+        x = next_x;
+    }
+}
+
 fn main() {
-  println!("Testing...");
+    ulp_test();
+    println!("Testing...");
 
-  //Coordinate { x: -98.0, y: 530.0 } Coordinate { x: 530.0, y: 530.0 } Coordinate { x: 1.250012525025, y: 531.0 } Coordinate { x: 1.2500125250252, y: -531.0 }
-  //s = 0.15804142121819267 => Coordinate { x: 1.2500125250249994, y: 530.0 }
-  let a1 = Coordinate { x: -98.0, y: 530.0 };
-  let a2 = Coordinate { x: 530.0, y: 530.0 };
-  let b1 = Coordinate { x: 1.250012525025, y: 531.0 };
-  let b2 = Coordinate { x: 1.2500125250252, y: -531.0 };
+    //Coordinate { x: -98.0, y: 530.0 } Coordinate { x: 530.0, y: 530.0 } Coordinate { x: 1.250012525025, y: 531.0 } Coordinate { x: 1.2500125250252, y: -531.0 }
+    //s = 0.15804142121819267 => Coordinate { x: 1.2500125250249994, y: 530.0 }
+    let a1 = Coordinate { x: -98.0, y: 530.0 };
+    let a2 = Coordinate { x: 530.0, y: 530.0 };
+    let b1 = Coordinate { x: 1.250012525025, y: 531.0 };
+    let b2 = Coordinate { x: 1.2500125250252, y: -531.0 };
 
-  let inter = intersection_impl(a1, a2, b1, b2);
-  let inter = match inter {
-    LineIntersection::Point(p) => Some(p),
-    _ => None
-  }.unwrap();
+    let inter = intersection_impl(a1, a2, b1, b2);
+    let inter = match inter {
+        LineIntersection::Point(p) => Some(p),
+        _ => None
+    }.unwrap();
 
-  println!("Intersection: {:?}", inter);
+    println!("Intersection: {:?}", inter);
 
-  println!("area 1: {}", signed_area_fast(a1, a2, inter));
-  println!("area 2: {}", signed_area_fast(b1, b2, inter));
+    println!("area 1: {}", signed_area_fast(a1, a2, inter));
+    println!("area 2: {}", signed_area_fast(b1, b2, inter));
 
-  println!("area 1 exact: {}", signed_area(a1, a2, inter));
-  println!("area 2 exact: {}", signed_area(b1, b2, inter));
+    println!("area 1 exact: {}", signed_area(a1, a2, inter));
+    println!("area 2 exact: {}", signed_area(b1, b2, inter));
 
-  let best = refine(a1, a2, b1, b2, inter, signed_area(a1, a2, inter).abs() + signed_area(b1, b2, inter).abs());
-  println!("best found: {:?}", best);
+    let best = refine(a1, a2, b1, b2, inter, signed_area(a1, a2, inter).abs() + signed_area(b1, b2, inter).abs());
+    println!("best found: {:?}", best);
 }
