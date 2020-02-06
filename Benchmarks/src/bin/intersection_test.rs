@@ -3,7 +3,10 @@ extern crate rand;
 
 use geo_types::Coordinate;
 
-use mycrate::{intersection_impl, signed_area, signed_area_fast, LineIntersection, Float};
+use mycrate::{
+    intersection_impl, signed_area, signed_area_fast, LineIntersection, Float,
+    intersection_search, intersection_search2,
+};
 
 use float_extras::f64::nextafter;
 use rand::Rng;
@@ -166,7 +169,47 @@ fn main() {
 
     //compare_signed_area(1000., 1000., -1000., -1000., 0., 0_f64.nextafter_steps(1000));
     //compare_signed_area(1000., 1000., 0., 1e-13, -1000., -1000.); // <= apparently it is possible to overestimate
-    compare_signed_area(0., 1e-13, 1000., 1000., -1000., -1000.);
+    //compare_signed_area(0., 1e-13, 1000., 1000., -1000., -1000.);
     // signed_area_precision_test();
+
+    /*
+    let a1 = Coordinate { x: -98.0, y: 530.0 };
+    let a2 = Coordinate { x: 530.0, y: 530.0 };
+    let b1 = Coordinate { x: 1.250012525025, y: 531.0 };
+    let b2 = Coordinate { x: 1.2500125250252, y: -531.0 };
+    */
+
+    let a1 = Coordinate { x: 1.51, y: 2.0 };
+    let a2 = Coordinate { x: 1.51, y: 0.0 };
+    let b1 = Coordinate { x: 1.0, y: 1.0 };
+    let b2 = Coordinate { x: 2.0.nextafter_steps(-1), y: 1.0.nextafter_steps(3) };
+
+    let inter = intersection_search2(a1, a2, b1, b2);
+    let inter = match inter {
+        LineIntersection::Point(p) => Some(p),
+        _ => None
+    }.unwrap();
+
+    println!("Intersection: {:?}", inter);
+
+    println!("area 1: {}", signed_area_fast(a1, a2, inter));
+    println!("area 2: {}", signed_area_fast(b1, b2, inter));
+
+    println!("area 1 exact: {}", signed_area(a1, a2, inter));
+    println!("area 2 exact: {}", signed_area(b1, b2, inter));
+
+    let best = refine(a1, a2, b1, b2, inter, signed_area(a1, a2, inter).abs() + signed_area(b1, b2, inter).abs());
+    println!("best found: {:?}", best);
+
+    fn divide(x: f64, n: usize) -> f64 {
+        let mut x = x;
+        for i in 0..n {
+            x /= 2.0;
+        }
+        x
+    }
+
+    //let x = 1.0.nextafter(false);
+    // println!("{}\n{}", x / 1024., divide(x, 10));
 
 }
