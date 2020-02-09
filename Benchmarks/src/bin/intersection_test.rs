@@ -2,11 +2,13 @@ extern crate mycrate;
 extern crate rand;
 
 use geo_types::Coordinate;
-use rand::Rng;
 
 use mycrate::{
-    intersection_impl, signed_area, signed_area_fast, LineIntersection, Float,
-    intersection_search, NextAfter
+    intersection_impl, signed_area, signed_area_fast, signed_area_exact,
+    LineIntersection, Float,
+    intersection_search,
+    NextAfter,
+    rand_geo,
 };
 
 
@@ -97,24 +99,18 @@ fn ulp_test() {
 }
 
 
-fn random_coord() -> Coordinate<f64> {
-    let mut rng = rand::thread_rng();
-    Coordinate{x: rng.gen_range(-1e9, 1e9), y: rng.gen_range(-1e9, 1e9)}
-}
-
-
 fn signed_area_precision_test() {
     let n = 1000;
     let mut i = 0;
     let mut found = 0;
     while found < 100 {
-        let a = random_coord();
-        let b = random_coord();
-        let c = random_coord();
-        let sa_exact = signed_area(a, b, c);
+        let (a, b, c) = rand_geo::three_points_almost_colinear();
+        let sa_exact = signed_area_exact(a, b, c);
+        let sa_robust = signed_area(a, b, c);
         let sa_fast = signed_area_fast(a, b, c);
         let diff = sa_fast - sa_exact;
         if diff != 0.0 {
+            //println!("{} {} {}", sa_exact, sa_robust, sa_fast);
             println!("{:?} {:?} {:?} {} {}", a, b, c, diff, i);
             found += 1;
         }
@@ -180,8 +176,6 @@ fn intersection_search_test() {
 
 fn main() {
     // ulp_test();
-    // signed_area_precision_test();
-
-    intersection_search_test()
-
+    signed_area_precision_test();
+    // intersection_search_test()
 }
