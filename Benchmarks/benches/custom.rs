@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate rand;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BatchSize};
@@ -52,20 +54,9 @@ fn custom(c: &mut Criterion) {
         b.iter_batched(|| &0, |&x| black_box(x), BatchSize::SmallInput)
     });
     */
+
     /*
-    c.bench_function("single black_box", |b| b.iter(
-        || (black_box(1.0_f64)).cos()
-    ));
-    c.bench_function("three black_box", |b| b.iter(
-        || (black_box(black_box(black_box(1.0_f64)))).cos()
-    ));
     */
-    c.bench_function("single arg black_box", |b| b.iter(
-        || add_three(black_box(1), 1, 1)
-    ));
-    c.bench_function("all args black_box", |b| b.iter(
-        || add_three(black_box(1), black_box(1), black_box(1))
-    ));
 
     c.bench_function("add_one_op (standard)", |b| b.iter(
         || black_box(1) + black_box(1)
@@ -152,6 +143,21 @@ fn custom_test(c: &mut Criterion) {
 
 }
 */
+
+fn bench_blackbox_overhead(c: &mut Criterion) {
+    c.bench_function("add_three (single black_box)", |b| b.iter(
+        || add_three(black_box(1), 1, 1)
+    ));
+    c.bench_function("add_three (three black_boxes)", |b| b.iter(
+        || add_three(black_box(1), black_box(1), black_box(1))
+    ));
+    c.bench_function("cos (single black_box)", |b| b.iter(
+        || (black_box(1.0_f64)).cos()
+    ));
+    c.bench_function("cos (three black_boxes)", |b| b.iter(
+        || (black_box(black_box(black_box(1.0_f64)))).cos()
+    ));
+}
 
 //criterion_group!(benches, basic_test);
 criterion_group!(benches, custom);
