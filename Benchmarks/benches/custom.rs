@@ -41,7 +41,7 @@ fn custom(c: &mut Criterion) {
     c.bench_function("abs (batched, random)", |b| iter_noop_batched(b,
         |_| rng.gen_range(-1e3_f64, 1e3_f64),
         |x| black_box(x),
-        |x| black_box(x),
+        |x| black_box(x).abs(),
     ));
 
 
@@ -50,52 +50,6 @@ fn custom(c: &mut Criterion) {
         b.iter_batched(|| &0, |&x| black_box(x), BatchSize::SmallInput)
     });
     */
-
-    /*
-    */
-
-    c.bench_function("add_one_op (standard)", |b| b.iter(
-        || black_box(1) + black_box(1)
-    ));
-    c.bench_function("add_ten_ops (standard)", |b| b.iter(
-        || black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1) +
-           black_box(1)
-    ));
-
-    c.bench_function("add_one_op (subtractive)", |b| b.iter_custom(|iters| {
-        bench_function_with_noop(
-            iters,
-            || black_box(1),
-            || black_box(1) + black_box(1),
-        )
-    }));
-    c.bench_function("add_ten_ops (subtractive)", |b| b.iter_custom(|iters| {
-        bench_function_with_noop(
-            iters,
-            || black_box(1),
-            || black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1) +
-               black_box(1),
-        )
-    }));
-
 }
 
 /*
@@ -140,6 +94,52 @@ fn custom_test(c: &mut Criterion) {
 }
 */
 
+
+fn bench_standard_vs_subtractive(c: &mut Criterion) {
+    c.bench_function("add_one_op (standard)", |b| b.iter(
+        || black_box(1) + black_box(1)
+    ));
+    c.bench_function("add_ten_ops (standard)", |b| b.iter(
+        || black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1) +
+           black_box(1)
+    ));
+
+    c.bench_function("add_one_op (subtractive)", |b| b.iter_custom(|iters| {
+        bench_function_with_noop(
+            iters,
+            || black_box(1),
+            || black_box(1) + black_box(1),
+        )
+    }));
+    c.bench_function("add_ten_ops (subtractive)", |b| b.iter_custom(|iters| {
+        bench_function_with_noop(
+            iters,
+            || black_box(1),
+            || black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1) +
+               black_box(1),
+        )
+    }));
+}
+
+
 fn bench_blackbox_overhead(c: &mut Criterion) {
     c.bench_function("add_three (single black_box)", |b| b.iter(
         || add_three(black_box(1), 1, 1)
@@ -154,6 +154,7 @@ fn bench_blackbox_overhead(c: &mut Criterion) {
         || (black_box(black_box(black_box(1.0_f64)))).cos()
     ));
 }
+
 
 //criterion_group!(benches, basic_test);
 criterion_group!(benches, custom);

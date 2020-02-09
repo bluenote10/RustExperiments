@@ -52,34 +52,36 @@ where
     N: FnMut(I) -> O,
     R: FnMut(I) -> O,
 {
-    let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
-    let mut outputs = Vec::with_capacity(iters as usize);
-    let start = Instant::now();
-    //for x in inputs {
-    //    black_box(noop(black_box(x)));
-    //}
-    outputs.extend(inputs.into_iter().map(&mut noop));
-    black_box(outputs);
-    let t_noop = start.elapsed();
+    let t_noop: std::time::Duration;
+    let t_routine: std::time::Duration;
 
-    let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
-    let mut outputs = Vec::with_capacity(iters as usize);
-    let start = Instant::now();
-    //for x in inputs {
-    //    black_box(routine(black_box(x)));
-    //}
-    outputs.extend(inputs.into_iter().map(&mut routine));
-    black_box(outputs);
-    let t_routine = start.elapsed();
-
-    /*
-    let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
-    let start = Instant::now();
-    for x in inputs {
-        black_box(noop(black_box(x)));
+    {
+        // warm up (probably helps for reserving memory)
+        let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
+        let mut outputs = Vec::with_capacity(iters as usize);
+        let start = Instant::now();
+        outputs.extend(inputs.into_iter().map(&mut noop));
+        start.elapsed();
+        black_box(outputs);
     }
-    let t_noop = start.elapsed();
-    */
+    {
+        // noop
+        let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
+        let mut outputs = Vec::with_capacity(iters as usize);
+        let start = Instant::now();
+        outputs.extend(inputs.into_iter().map(&mut noop));
+        t_noop = start.elapsed();
+        black_box(outputs);
+    }
+    {
+        // routine
+        let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
+        let mut outputs = Vec::with_capacity(iters as usize);
+        let start = Instant::now();
+        outputs.extend(inputs.into_iter().map(&mut routine));
+        t_routine = start.elapsed();
+        black_box(outputs);
+    }
 
     // println!("{} {:?} {:?} {:?}", iters, t_noop, t_routine, t_routine.checked_sub(t_noop));
 
