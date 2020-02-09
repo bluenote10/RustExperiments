@@ -2,38 +2,13 @@ extern crate mycrate;
 extern crate rand;
 
 use geo_types::Coordinate;
+use rand::Rng;
 
 use mycrate::{
     intersection_impl, signed_area, signed_area_fast, LineIntersection, Float,
-    intersection_search, intersection_search2,
+    intersection_search, intersection_search2, NextAfter
 };
 
-use float_extras::f64::nextafter;
-use rand::Rng;
-
-
-pub trait NextAfter {
-    fn nextafter(self, up: bool) -> Self;
-    fn nextafter_steps(self, steps: i32) -> Self;
-}
-
-impl NextAfter for f64 {
-    fn nextafter(self, up: bool) -> Self {
-        if up {
-            nextafter(self, std::f64::INFINITY)
-        } else {
-            nextafter(self, std::f64::NEG_INFINITY)
-        }
-    }
-
-    fn nextafter_steps(self, steps: i32) -> Self {
-        let mut x = self;
-        for _ in 0..steps.abs() {
-            x = x.nextafter(steps > 0);
-        }
-        x
-    }
-}
 
 pub fn refine<F>(
   a1: Coordinate<F>,
@@ -44,7 +19,7 @@ pub fn refine<F>(
   cur_score: F,
 ) -> Coordinate<F>
 where
-  F: Float + NextAfter,
+  F: Float,
 {
     let p00 = Coordinate{x: i.x.nextafter(false), y: i.y.nextafter(false)};
     let p01 = Coordinate{x: i.x.nextafter(false), y: i.y};
@@ -77,11 +52,6 @@ where
 }
 
 
-fn get_ulp(x: f64) -> f64 {
-    x.nextafter(true) - x
-}
-
-
 fn refinement_test() {
     //Coordinate { x: -98.0, y: 530.0 } Coordinate { x: 530.0, y: 530.0 } Coordinate { x: 1.250012525025, y: 531.0 } Coordinate { x: 1.2500125250252, y: -531.0 }
     //s = 0.15804142121819267 => Coordinate { x: 1.2500125250249994, y: 530.0 }
@@ -110,13 +80,13 @@ fn refinement_test() {
 
 
 fn ulp_test() {
-    println!("{}", get_ulp(1.0));
-    println!("{}", get_ulp(1.0.nextafter(false)));
+    println!("{}", (1.0).ulp());
+    println!("{}", (1.0.nextafter(false)).ulp());
     let mut x = 2.0 - 1e-10;
-    let mut ulp = get_ulp(x);
+    let mut ulp = x.ulp();
     while x < 2.1 {
         let next_x = x.nextafter(true);
-        let next_ulp = get_ulp(next_x);
+        let next_ulp = next_x.ulp();
         if next_ulp != ulp {
             println!("{} {}", next_x, next_ulp);
             ulp = next_ulp;
