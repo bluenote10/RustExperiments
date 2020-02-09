@@ -9,6 +9,10 @@ pub use helper::Float;
 pub use helper::NextAfter;
 pub use full_precision::signed_area_exact;
 
+// ----------------------------------------------------------------------------
+// Original signed area
+// ----------------------------------------------------------------------------
+
 #[inline]
 pub fn coordinate_to_robust<F>(p : Coordinate<F>) -> Coord
 where
@@ -50,7 +54,7 @@ where
 }
 
 // ----------------------------------------------------------------------------
-// Intersection
+// Original intersection
 // ----------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -210,8 +214,16 @@ where
     a.x * b.x + a.y * b.y
 }
 
+// ----------------------------------------------------------------------------
+// Intersection binary search
+// ----------------------------------------------------------------------------
 
-pub fn intersection_search<F>(
+/// First implementation of intersection binary search using segment division.
+/// The problem with this approach is that subdividing the segments can accumulate
+/// rounding errors in the midpoint calculation, i.e., after repeatedly taking
+/// the midpoint, we end up on a segment that no longer lies on the original
+/// segment.
+pub fn intersection_search_segment_divide<F>(
     a1: Coordinate<F>,
     a2: Coordinate<F>,
     b1: Coordinate<F>,
@@ -232,31 +244,7 @@ where
         (b2, sa2, b1, sa1)
     };
 
-    /*
-    // we could limit to...
-    let a_min_x = a1.x.min(a2.x);
-    let a_max_x = a1.x.max(a2.x);
-    let a_min_y = a1.y.min(a2.y);
-    let a_max_y = a1.y.max(a2.y);
-    let b_min_x = b1.x.min(b2.x);
-    let b_max_x = b1.x.max(b2.x);
-    let b_min_y = b1.y.min(b2.y);
-    let b_max_y = b1.y.max(b2.y);
-    let min_x = a_min_x.max(b_min_x);
-    let max_x = a_max_x.min(b_max_x);
-    let min_y = a_min_y.max(b_min_y);
-    let max_y = a_max_y.min(b_max_y);
-    */
-    //let mut a1 = a1;
-    //let mut a2 = a2;
-    let mut b1 = b1;
-    let mut b2 = b2;
-
-    let mut a_done = false;
-    let mut b_done = false;
-
     let two = F::from(2.0).unwrap();
-
     let mut i = 0;
 
     loop {
@@ -294,21 +282,9 @@ where
 }
 
 
-
-pub fn get_y<F>(
-    p: Coordinate<F>,
-    d: Coordinate<F>,
-    x: F,
-) -> F
-where
-    F: Float,
-{
-    let t = (x - p.x) / d.x;
-    p.y + t * d.y
-}
-
-
-pub fn intersection_search2<F>(
+/// Improved binary intersection search, which avoids the midpoint rounding error,
+/// by repeatedly reprojecting the midpoint using the segment formula.
+pub fn intersection_search<F>(
     a1: Coordinate<F>,
     a2: Coordinate<F>,
     b1: Coordinate<F>,
@@ -323,51 +299,27 @@ where
         return LineIntersection::None;
     }
 
-    /*
-    let (mut b_neg, mut sa_neg, mut b_pos, mut sa_pos) = if sa1 < sa2 {
-        (b1, sa1, b2, sa2)
-    } else {
-        (b2, sa2, b1, sa1)
-    };
-    */
-
     let (sa_l, sa_r) = if b1.x < b2.x {
         (signed_area(a1, a2, b1), signed_area(a1, a2, b2))
     } else {
         (signed_area(a1, a2, b2), signed_area(a1, a2, b1))
     };
 
-    /*
-    // we could limit to...
-    let a_min_x = a1.x.min(a2.x);
-    let a_max_x = a1.x.max(a2.x);
-    let a_min_y = a1.y.min(a2.y);
-    let a_max_y = a1.y.max(a2.y);
-    let b_min_x = b1.x.min(b2.x);
-    let b_max_x = b1.x.max(b2.x);
-    let b_min_y = b1.y.min(b2.y);
-    let b_max_y = b1.y.max(b2.y);
-    let min_x = a_min_x.max(b_min_x);
-    let max_x = a_max_x.min(b_max_x);
-    let min_y = a_min_y.max(b_min_y);
-    let max_y = a_max_y.min(b_max_y);
-    */
     let vb = Coordinate{x: b2.x - b1.x, y: b2.y - b1.y};
 
     let two = F::from(2.0).unwrap();
     let mut i = 0;
 
     if vb.x.abs() > vb.y.abs() {
-        /*
+        // This would searcht the entire b x-range, but we can actually limit to overlap.
+        // let mut x_min = b1.x.min(b2.x);
+        // let mut x_max = b1.x.max(b2.x);
         let a_min_x = a1.x.min(a2.x);
         let a_max_x = a1.x.max(a2.x);
         let b_min_x = b1.x.min(b2.x);
         let b_max_x = b1.x.max(b2.x);
         let mut x_min = a_min_x.max(b_min_x);
         let mut x_max = a_max_x.min(b_max_x);
-        */
-        let mut x_min = b1.x.min(b2.x);
-        let mut x_max = b1.x.max(b2.x);
 
         let mut sa_l_cur = sa_l;
         let mut sa_r_cur = sa_r;
@@ -407,7 +359,22 @@ where
     LineIntersection::None
 }
 
+pub fn get_y<F>(
+    p: Coordinate<F>,
+    d: Coordinate<F>,
+    x: F,
+) -> F
+where
+    F: Float,
+{
+    let t = (x - p.x) / d.x;
+    p.y + t * d.y
+}
 
+
+// ----------------------------------------------------------------------------
+// Orig tests
+// ----------------------------------------------------------------------------
 
 #[cfg(test)]
 mod test {

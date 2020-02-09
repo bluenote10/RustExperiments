@@ -6,7 +6,7 @@ use rand::Rng;
 
 use mycrate::{
     intersection_impl, signed_area, signed_area_fast, LineIntersection, Float,
-    intersection_search, intersection_search2, NextAfter
+    intersection_search, NextAfter
 };
 
 
@@ -133,15 +133,18 @@ fn compare_signed_area(ax: f64, ay: f64, bx: f64, by: f64, cx: f64, cy: f64) {
     println!("{} {} {} {:?} {:?} {:?}", diff, sa_fast, sa_exact, a, b, c);
 }
 
+fn check_signed_area_error() {
+    // This was a quick check if the approximate version of signed error only
+    // has a problem with artificially outputting zero when it shouldn't.
+    // But apparently, it is also possible that its output overestimates
+    // the value by the robust implementation.
+    compare_signed_area(1000., 1000., -1000., -1000., 0., 0_f64.nextafter_steps(1000));
+    compare_signed_area(1000., 1000., 0., 1e-13, -1000., -1000.); // overestimates!
+    compare_signed_area(0., 1e-13, 1000., 1000., -1000., -1000.);
+}
 
-fn main() {
-    // ulp_test();
 
-    //compare_signed_area(1000., 1000., -1000., -1000., 0., 0_f64.nextafter_steps(1000));
-    //compare_signed_area(1000., 1000., 0., 1e-13, -1000., -1000.); // <= apparently it is possible to overestimate
-    //compare_signed_area(0., 1e-13, 1000., 1000., -1000., -1000.);
-    // signed_area_precision_test();
-
+fn intersection_search_test() {
     /*
     let a1 = Coordinate { x: -98.0, y: 530.0 };
     let a2 = Coordinate { x: 530.0, y: 530.0 };
@@ -149,12 +152,14 @@ fn main() {
     let b2 = Coordinate { x: 1.2500125250252, y: -531.0 };
     */
 
+    // This test case let the first implementation (based on repeated
+    // midpoint computation) fail due to roundoff errors.
     let a1 = Coordinate { x: 1.51, y: 2.0 };
     let a2 = Coordinate { x: 1.51, y: 0.0 };
     let b1 = Coordinate { x: 1.0, y: 1.0 };
     let b2 = Coordinate { x: 2.0.nextafter_steps(-1), y: 1.0.nextafter_steps(3) };
 
-    let inter = intersection_search2(a1, a2, b1, b2);
+    let inter = intersection_search(a1, a2, b1, b2);
     let inter = match inter {
         LineIntersection::Point(p) => Some(p),
         _ => None
@@ -170,16 +175,13 @@ fn main() {
 
     let best = refine(a1, a2, b1, b2, inter, signed_area(a1, a2, inter).abs() + signed_area(b1, b2, inter).abs());
     println!("best found: {:?}", best);
+}
 
-    fn divide(x: f64, n: usize) -> f64 {
-        let mut x = x;
-        for i in 0..n {
-            x /= 2.0;
-        }
-        x
-    }
 
-    //let x = 1.0.nextafter(false);
-    // println!("{}\n{}", x / 1024., divide(x, 10));
+fn main() {
+    // ulp_test();
+    // signed_area_precision_test();
+
+    intersection_search_test()
 
 }
