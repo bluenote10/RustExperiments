@@ -311,7 +311,7 @@ where
     let mut i = 0;
 
     if vb.x.abs() > vb.y.abs() {
-        // This would searcht the entire b x-range, but we can actually limit to overlap.
+        // This would search the entire b x-range, but we can actually limit to overlap.
         // let mut x_min = b1.x.min(b2.x);
         // let mut x_max = b1.x.max(b2.x);
         let a_min_x = a1.x.min(a2.x);
@@ -335,8 +335,7 @@ where
             let sa_mid = signed_area(a1, a2, mid);
 
             // println!("{:?} {} {} {}", mid, x_min, x_max, sa_mid);
-
-            if sa_mid < F::zero() && sa_l < F::zero() {
+            if (sa_mid < F::zero()) == (sa_l < F::zero()) {
                 x_min = x_mid;
                 sa_l_cur = sa_mid;
             } else {
@@ -371,6 +370,91 @@ where
     p.y + t * d.y
 }
 
+// ----------------------------------------------------------------------------
+// Iterative refinement
+// ----------------------------------------------------------------------------
+
+/*
+pub fn refine_intersection<F, S>(
+    a1: Coordinate<F>,
+    a2: Coordinate<F>,
+    b1: Coordinate<F>,
+    b2: Coordinate<F>,
+    i: Coordinate<F>,
+    score: S,
+) -> (u64, Coordinate<F>)
+where
+    F: Float,
+    S: FnMut(Coordinate<F>, Coordinate<F>, Coordinate<F>, Coordinate<F>, Coordinate<F>) -> F,
+{
+    let mut p00 = Coordinate{x: i.x.nextafter(false), y: i.y.nextafter(false)};
+    let mut p01 = Coordinate{x: i.x.nextafter(false), y: i.y};
+    let mut p02 = Coordinate{x: i.x.nextafter(false), y: i.y.nextafter(true)};
+    let mut p10 = Coordinate{x: i.x, y: i.y.nextafter(false)};
+    let mut p11 = Coordinate{x: i.x, y: i.y};
+    let mut p12 = Coordinate{x: i.x, y: i.y.nextafter(true)};
+    let mut p20 = Coordinate{x: i.x.nextafter(true), y: i.y.nextafter(false)};
+    let mut p21 = Coordinate{x: i.x.nextafter(true), y: i.y};
+    let mut p22 = Coordinate{x: i.x.nextafter(true), y: i.y.nextafter(true)};
+
+    //let mut cur_score = score(a1, a2, b1, b2, i);
+
+    let mut scores = [
+        score(a1, a2, b1, b2, p00),
+        score(a1, a2, b1, b2, p01),
+        score(a1, a2, b1, b2, p02),
+        score(a1, a2, b1, b2, p10),
+        score(a1, a2, b1, b2, p11),
+        score(a1, a2, b1, b2, p12),
+        score(a1, a2, b1, b2, p20),
+        score(a1, a2, b1, b2, p21),
+        score(a1, a2, b1, b2, p22),
+    ];
+
+    let mut iterations = 0;
+
+    loop {
+        let index_best = scores
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(index, _)| index)
+            .unwrap();
+
+        if index_best == 4 {
+            return (iterations, p11);
+        } else if index_best == 0 {
+            let x = p00.x.nextafter(false);
+            let y = p00.y.nextafter(false);
+            p00.x = x;
+
+        }
+    }
+
+    let mut neighbors = [p00, p01, p02, p10, p12, p20, p21, p22];
+    let mut min = cur_score;
+    let mut best_idx = -1;
+
+    for (idx, n) in neighbors.iter().enumerate() {
+        let area1 = signed_area_fast(a1, a2, n.clone());
+        let area2 = signed_area_fast(b1, b2, n.clone());
+        let score = area1.abs() + area2.abs();
+        if score < min {
+            min = score;
+            best_idx = idx as i64;
+        }
+        println!("{:?} {:?}", score, n);
+    }
+    if best_idx == -1 {
+        return i;
+    } else {
+        println!("{:?} {:?} {:?}", min, best_idx, neighbors[best_idx as usize]);
+        refine(a1, a2, b1, b2, neighbors[best_idx as usize].clone(), min)
+    }
+
+    unimplemented!()
+}
+*/
 
 // ----------------------------------------------------------------------------
 // Orig tests

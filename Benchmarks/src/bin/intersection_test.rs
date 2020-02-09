@@ -182,36 +182,68 @@ fn intersection_search_test() {
 }
 
 
+fn get_ulp_distance(a: Coordinate<f64>, b: Coordinate<f64>) -> (u64, u64) {
+    let mut iterations_x = 0;
+    let mut iterations_y = 0;
+    let mut x = a.x;
+    let mut y = a.y;
+    while x != b.x {
+        x = x.nextafter(b.x > a.x);
+        iterations_x += 1;
+    }
+    while y != b.y {
+        y = y.nextafter(b.y > a.y);
+        iterations_y += 1;
+    }
+    (iterations_x, iterations_y)
+}
+
+
 fn intersection_comparison() {
     let mut records: Vec<Value> = Vec::new();
     let n = 1000;
     let mut i = 0;
     while i < n {
         let (a1, a2, b1, b2) = rand_geo::intersecting_segments();
-        println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+        // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
         let i_fast = intersection(a1, a2, b1, b2);
         let i_exact = intersection_exact(a1, a2, b1, b2);
+        let i_search = intersection_search(a1, a2, b1, b2);
 
         let i_fast = match i_fast {
             LineIntersection::Point(p) => Some(p),
             _ => None,
         };
-        if i_fast.is_none() || i_exact.is_none() {
+        let i_search = match i_search {
+            LineIntersection::Point(p) => Some(p),
+            _ => None,
+        };
+        if i_fast.is_none() || i_search.is_none() || i_exact.is_none() {
             println!("WARNING: Skipping iterations because a result was missing:");
-            println!("{:?} {:?}", i_fast, i_exact);
+            println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
             continue;
         }
         let i_fast = i_fast.unwrap();
+        let i_search = i_search.unwrap();
         let i_exact = i_exact.unwrap();
+        // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+        // println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
 
         records.push(json!({
             "i_fast": {
                 "x": i_fast.x,
                 "y": i_fast.y,
+                "ulp_dist": get_ulp_distance(i_fast, i_exact),
+            },
+            "i_search": {
+                "x": i_search.x,
+                "y": i_search.y,
+                "ulp_dist": get_ulp_distance(i_search, i_exact),
             },
             "i_exact": {
                 "x": i_exact.x,
                 "y": i_exact.y,
+                "ulp_dist": get_ulp_distance(i_exact, i_exact),
             },
         }));
         i += 1;
