@@ -22,7 +22,7 @@ where
 
 #[inline]
 #[allow(dead_code)]
-pub fn intersection<F>(
+pub fn intersection_exact<F>(
     a1: Coordinate<F>,
     a2: Coordinate<F>,
     b1: Coordinate<F>,

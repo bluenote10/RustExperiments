@@ -68,3 +68,24 @@ pub fn random_permutation(a: Coordinate<f64>, b: Coordinate<f64>, c: Coordinate<
         _ => panic!("Invalid value"),
     }
 }
+
+
+pub fn intersecting_segments() -> (Coordinate<f64>, Coordinate<f64>, Coordinate<f64>, Coordinate<f64>) {
+    let mut rng = rand::thread_rng();
+
+    let (a1, b1, i) = three_points();
+
+    let s = rng.gen_range(1.001_f64, 10f64);
+    let t = rng.gen_range(1.001_f64, 10f64);
+
+    let a2 = Coordinate{
+        x: a1.x + s * (i.x - a1.x),
+        y: a1.y + s * (i.y - a1.y),
+    };
+    let b2 = Coordinate{
+        x: b1.x + s * (i.x - b1.x),
+        y: b1.y + s * (i.y - b1.y),
+    };
+
+    (a1, a2, b1, b2)
+}

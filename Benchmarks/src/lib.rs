@@ -8,6 +8,7 @@ pub mod rand_geo;
 pub use helper::Float;
 pub use helper::NextAfter;
 pub use full_precision::signed_area_exact;
+pub use full_precision::intersection_exact;
 
 // ----------------------------------------------------------------------------
 // Original signed area
@@ -94,13 +95,13 @@ where
             if p.x < min_x {
                 p.x = min_x;
             }
-            if p.x < max_x {
+            if p.x > max_x {
                 p.x = max_x;
             }
             if p.y < min_y {
                 p.y = min_y;
             }
-            if p.y < max_y {
+            if p.y > max_y {
                 p.y = max_y;
             }
             LineIntersection::Point(p)
@@ -118,7 +119,7 @@ pub fn intersection_impl<F>(
 where
     F: Float,
 {
-    println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+    // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
     let va = Coordinate {
         x: a2.x - a1.x,
         y: a2.y - a1.y,
@@ -152,7 +153,7 @@ where
             return LineIntersection::Point(mid_point(b1, t, vb));
         }
 
-        println!("s = {:?} => {:?}", s, mid_point(a1, s, va));
+        //println!("s = {:?} => {:?}", s, mid_point(a1, s, va));
         //return LineIntersection::Point(mid_point(b1, t, vb));
         return LineIntersection::Point(mid_point(a1, s, va));
     }
@@ -194,7 +195,7 @@ where
         x: p.x + s * d.x,
         y: p.y + s * d.y,
     };
-    println!("{:?} {:?} {:?} {:?}", p, s, d, result);
+    //println!("{:?} {:?} {:?} {:?}", p, s, d, result);
     result
 }
 
@@ -249,11 +250,10 @@ where
 
     loop {
 
-        //let mid = Coordinate{x: (b1.x + b2.x) / two, y: (b1.y + b2.y) / two};
         let mid = Coordinate{x: (b_neg.x + b_pos.x) / two, y: (b_neg.y + b_pos.y) / two};
         let sa_mid = signed_area(a1, a2, mid);
 
-        println!("{:?} {:?} {:?} {}", b_neg, mid, b_pos, sa_mid);
+        // println!("{:?} {:?} {:?} {}", b_neg, mid, b_pos, sa_mid);
 
         if sa_mid < F::zero() {
             if b_neg == mid {
@@ -272,7 +272,7 @@ where
         i += 1;
     }
 
-    println!("{} {} {}", i, sa_neg, sa_pos);
+    // println!("{} {} {}", i, sa_neg, sa_pos);
 
     if -sa_neg < sa_pos {
         LineIntersection::Point(Coordinate{x: b_neg.x, y: b_neg.y})
@@ -334,7 +334,7 @@ where
             let mid = Coordinate{x: x_mid, y: y_mid};
             let sa_mid = signed_area(a1, a2, mid);
 
-            println!("{:?} {} {} {}", mid, x_min, x_max, sa_mid);
+            // println!("{:?} {} {} {}", mid, x_min, x_max, sa_mid);
 
             if sa_mid < F::zero() && sa_l < F::zero() {
                 x_min = x_mid;
@@ -346,7 +346,7 @@ where
 
             i += 1;
         }
-        println!("{} {} {}", i, sa_l_cur, sa_r_cur);
+        // println!("{} {} {}", i, sa_l_cur, sa_r_cur);
 
         if -sa_l_cur < sa_r_cur {
             return LineIntersection::Point(Coordinate{x: x_min, y: get_y(b1, vb, x_min)})

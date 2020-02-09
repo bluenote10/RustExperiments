@@ -3,12 +3,12 @@ extern crate rand;
 
 use std::fs::File;
 use geo_types::Coordinate;
-use serde_json::{Result, Value, json};
+use serde_json::{Value, json};
 
 use mycrate::{
     intersection_impl, signed_area, signed_area_fast, signed_area_exact,
     LineIntersection, Float,
-    intersection_search,
+    intersection, intersection_search, intersection_exact,
     NextAfter,
     rand_geo,
 };
@@ -182,8 +182,48 @@ fn intersection_search_test() {
 }
 
 
+fn intersection_comparison() {
+    let mut records: Vec<Value> = Vec::new();
+    let n = 1000;
+    let mut i = 0;
+    while i < n {
+        let (a1, a2, b1, b2) = rand_geo::intersecting_segments();
+        println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+        let i_fast = intersection(a1, a2, b1, b2);
+        let i_exact = intersection_exact(a1, a2, b1, b2);
+
+        let i_fast = match i_fast {
+            LineIntersection::Point(p) => Some(p),
+            _ => None,
+        };
+        if i_fast.is_none() || i_exact.is_none() {
+            println!("WARNING: Skipping iterations because a result was missing:");
+            println!("{:?} {:?}", i_fast, i_exact);
+            continue;
+        }
+        let i_fast = i_fast.unwrap();
+        let i_exact = i_exact.unwrap();
+
+        records.push(json!({
+            "i_fast": {
+                "x": i_fast.x,
+                "y": i_fast.y,
+            },
+            "i_exact": {
+                "x": i_exact.x,
+                "y": i_exact.y,
+            },
+        }));
+        i += 1;
+    }
+    let f = File::create("intersection_data.json").expect("Unable to create json file.");
+    serde_json::to_writer_pretty(f, &records).expect("Unable to write json file.");
+}
+
+
 fn main() {
     // ulp_test();
-    signed_area_precision_test();
+    // signed_area_precision_test();
     // intersection_search_test()
+    intersection_comparison();
 }
