@@ -51,10 +51,12 @@ where
     G: FnMut(u64) -> I,
     N: FnMut(I) -> O,
     R: FnMut(I) -> O,
+    I: Clone,
 {
     let t_noop: std::time::Duration;
     let t_routine: std::time::Duration;
 
+    /*
     {
         // warm up (probably helps for reserving memory)
         let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
@@ -64,23 +66,41 @@ where
         start.elapsed();
         black_box(outputs);
     }
+    */
+    let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
     {
         // noop
-        let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
-        let mut outputs = Vec::with_capacity(iters as usize);
+        //let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
+        //let mut outputs = Vec::with_capacity(iters as usize);
+        //for i in 0..iters as usize {
+        //    black_box(&inputs[i]);
+        //}
+        for x in &inputs {
+            black_box(noop(x.clone()));
+        }
         let start = Instant::now();
-        outputs.extend(inputs.into_iter().map(&mut noop));
+        for x in &inputs {
+            black_box(noop(x.clone()));
+        }
+        //outputs.extend(inputs.into_iter().map(&mut noop));
         t_noop = start.elapsed();
-        black_box(outputs);
     }
     {
         // routine
-        let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
-        let mut outputs = Vec::with_capacity(iters as usize);
+        //let inputs = black_box((0..iters).map(|i| black_box(generator(i))).collect::<Vec<_>>());
+        //let mut outputs = Vec::with_capacity(iters as usize);
+        //for i in 0..iters as usize {
+        //    black_box(&inputs[i]);
+        //}
+        for x in &inputs {
+            black_box(routine(x.clone()));
+        }
         let start = Instant::now();
-        outputs.extend(inputs.into_iter().map(&mut routine));
+        for x in &inputs {
+            black_box(routine(x.clone()));
+        }
+        //outputs.extend(inputs.into_iter().map(&mut routine));
         t_routine = start.elapsed();
-        black_box(outputs);
     }
 
     // println!("{} {:?} {:?} {:?}", iters, t_noop, t_routine, t_routine.checked_sub(t_noop));

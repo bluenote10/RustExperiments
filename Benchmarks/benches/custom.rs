@@ -40,10 +40,9 @@ fn custom(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     c.bench_function("abs (batched, random)", |b| iter_noop_batched(b,
         |_| rng.gen_range(-1e3_f64, 1e3_f64),
-        |x| black_box(x),
-        |x| black_box(x).abs(),
+        |x| x < 1.0,
+        |x| x.abs() < 1.0,
     ));
-
 
     /*
     c.bench_function("noop batched", move |b| {
