@@ -12,6 +12,7 @@ num-traits = "0.2"
 robust = "0.1"
 float_extras = "*"
 rand = "*"
+rug = "0.6"
 
 [dev-dependencies]
 criterion = "0.3"

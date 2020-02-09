@@ -1,12 +1,11 @@
 use geo_types::Coordinate;
 use robust::{Coord, orient2d};
 
-use std::fmt::{Debug, Display};
-use num_traits::Float as NumTraitsFloat;
+mod helper;
+mod full_precision;
 
-pub trait Float: NumTraitsFloat + Debug + Display {}
-impl<T: NumTraitsFloat + Debug + Display> Float for T {}
-
+pub use helper::Float;
+pub use full_precision::signed_area_exact;
 
 #[inline]
 pub fn coordinate_to_robust<F>(p : Coordinate<F>) -> Coord
