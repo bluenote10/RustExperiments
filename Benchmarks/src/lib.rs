@@ -3,6 +3,7 @@ use robust::{Coord, orient2d};
 
 mod helper;
 mod full_precision;
+pub mod rand_geo;
 
 pub use helper::Float;
 pub use full_precision::signed_area_exact;

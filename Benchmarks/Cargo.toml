@@ -19,7 +19,7 @@ criterion = "0.3"
 criterion-cycles-per-byte = "0.1.1"
 
 [[bench]]
-name = "custom"
+name = "geo"
 harness = false
 
 # may try:
