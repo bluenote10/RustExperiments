@@ -9,6 +9,7 @@ use mycrate::{
     intersection_impl, signed_area, signed_area_fast, signed_area_exact,
     LineIntersection, Float,
     intersection, intersection_search, intersection_exact,
+    analyze_grid,
     NextAfter,
     rand_geo,
 };
@@ -182,26 +183,26 @@ fn intersection_search_test() {
 }
 
 
-fn get_ulp_distance(a: Coordinate<f64>, b: Coordinate<f64>) -> (u64, u64) {
-    let mut iterations_x = 0;
-    let mut iterations_y = 0;
+fn get_ulp_distance(a: Coordinate<f64>, b: Coordinate<f64>) -> (i64, i64) {
+    let mut delta_x = 0;
+    let mut delta_y = 0;
     let mut x = a.x;
     let mut y = a.y;
     while x != b.x {
         x = x.nextafter(b.x > a.x);
-        iterations_x += 1;
+        delta_x += if b.x > a.x { 1 } else { -1 };
     }
     while y != b.y {
         y = y.nextafter(b.y > a.y);
-        iterations_y += 1;
+        delta_y += if b.y > a.y { 1 } else { -1 };
     }
-    (iterations_x, iterations_y)
+    (delta_x, delta_y)
 }
 
 
 fn intersection_comparison() {
     let mut records: Vec<Value> = Vec::new();
-    let n = 1000;
+    let n = 10;
     let mut i = 0;
     while i < n {
         let (a1, a2, b1, b2) = rand_geo::intersecting_segments();
@@ -229,6 +230,15 @@ fn intersection_comparison() {
         // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
         // println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
 
+        let mut grid: Vec<Value> = Vec::new();
+        analyze_grid(a1, a2, b1, b2, i_exact, 20, |i, j, dist| {
+            grid.push(json!({
+                "i": i,
+                "j": j,
+                "dist": dist,
+            }))
+        });
+
         records.push(json!({
             "i_fast": {
                 "x": i_fast.x,
@@ -245,6 +255,7 @@ fn intersection_comparison() {
                 "y": i_exact.y,
                 "ulp_dist": get_ulp_distance(i_exact, i_exact),
             },
+            "grid": grid,
         }));
         i += 1;
     }

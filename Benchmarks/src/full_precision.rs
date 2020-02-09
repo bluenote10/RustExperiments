@@ -1,11 +1,12 @@
 use geo_types::Coordinate;
 use super::helper::Float;
+use super::helper::NextAfter;
 
 use rug::Rational;
 
 
 #[inline]
-pub fn signed_area_exact<F>(p0: Coordinate<F>, p1: Coordinate<F>, p2: Coordinate<F>) -> F
+pub fn signed_area_exact_impl<F>(p0: Coordinate<F>, p1: Coordinate<F>, p2: Coordinate<F>) -> Rational
 where
     F: Float,
 {
@@ -15,8 +16,61 @@ where
     let p1y = Rational::from_f64(p1.y.into()).unwrap();
     let p2x = Rational::from_f64(p2.x.into()).unwrap();
     let p2y = Rational::from_f64(p2.y.into()).unwrap();
-    let result = (p0x - &p2x) * (p1y - &p2y) - (p1x - &p2x) * (p0y - &p2y);
+    (p0x - &p2x) * (p1y - &p2y) - (p1x - &p2x) * (p0y - &p2y)
+}
+
+
+#[inline]
+pub fn get_length_squared<F>(a: Coordinate<F>, b: Coordinate<F>) -> Rational
+where
+    F: Float,
+{
+    let ax = Rational::from_f64(a.x.into()).unwrap();
+    let ay = Rational::from_f64(a.y.into()).unwrap();
+    let bx = Rational::from_f64(b.x.into()).unwrap();
+    let by = Rational::from_f64(b.y.into()).unwrap();
+    let delta_x_sqr = (ax.clone() - bx.clone()) * (ax.clone() - bx.clone());
+    let delta_y_sqr = (ay.clone() - by.clone()) * (ay.clone() - by.clone());
+    delta_x_sqr + delta_y_sqr
+}
+
+
+#[inline]
+pub fn signed_area_exact<F>(p0: Coordinate<F>, p1: Coordinate<F>, p2: Coordinate<F>) -> F
+where
+    F: Float,
+{
+    let result = signed_area_exact_impl(p0, p1, p2);
     F::from(result.to_f64()).unwrap()
+}
+
+
+pub fn analyze_grid<C>(
+    a1: Coordinate<f64>,
+    a2: Coordinate<f64>,
+    b1: Coordinate<f64>,
+    b2: Coordinate<f64>,
+    center: Coordinate<f64>,
+    delta: i32,
+    mut cb: C,
+)
+where
+    C: FnMut(i32, i32, f64)
+{
+    for i in -delta ..= delta {
+        for j in -delta ..= delta {
+            let p = Coordinate{x: center.x.nextafter_steps(i), y: center.y.nextafter_steps(j)};
+            let perp_a = signed_area_exact_impl(a1, a2, p);
+            let perp_b = signed_area_exact_impl(b1, b2, p);
+            let length_squared_a = get_length_squared(a1, a2);
+            let length_squared_b = get_length_squared(b1, b2);
+            let dist_squared_a = perp_a.clone() * perp_a.clone() / length_squared_a;
+            let dist_squared_b = perp_b.clone() * perp_b.clone() / length_squared_b;
+            // let sum_dist_squared = (dist_squared_a + dist_squared_b).to_f64();
+            let sum_dist = dist_squared_a.to_f64().sqrt() + dist_squared_b.to_f64().sqrt();
+            cb(i, j, sum_dist);
+        }
+    }
 }
 
 

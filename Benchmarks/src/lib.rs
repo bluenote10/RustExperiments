@@ -7,8 +7,9 @@ pub mod rand_geo;
 
 pub use helper::Float;
 pub use helper::NextAfter;
-pub use full_precision::signed_area_exact;
-pub use full_precision::intersection_exact;
+pub use full_precision::{
+    signed_area_exact, intersection_exact, analyze_grid,
+};
 
 // ----------------------------------------------------------------------------
 // Original signed area
