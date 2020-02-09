@@ -1,4 +1,10 @@
+#![allow(dead_code)]
+
 extern crate rand;
+
+mod utils;
+use utils::bench_function_with_noop;
+
 use mycrate::{signed_area, signed_area_fast, intersection, LineIntersection};
 
 use geo_types::Coordinate;
@@ -6,32 +12,6 @@ use geo_types::Coordinate;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use std::time::{Duration, Instant};
-
-
-fn bench_function_with_noop<O, N, R>(iters: u64, mut noop: N, mut routine: R) -> Duration
-where
-    N: FnMut() -> O,
-    R: FnMut() -> O,
-{
-    let start = Instant::now();
-    for _i in 0..iters {
-        black_box(noop());
-    }
-    let t_noop = start.elapsed();
-
-    let start = Instant::now();
-    for _i in 0..iters {
-        black_box(routine());
-    }
-    let t_routine = start.elapsed();
-
-    if let Some(diff) = t_routine.checked_sub(t_noop) {
-        diff
-    } else {
-        std::time::Duration::from_nanos(0)
-    }
-
-}
 
 
 #[inline]

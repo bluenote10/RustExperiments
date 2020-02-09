@@ -1,35 +1,13 @@
 #![allow(dead_code)]
-
 extern crate rand;
+use rand::Rng;
+
+mod utils;
+use utils::{bench_function_with_noop, iter_noop, iter_noop_batched};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BatchSize};
 
 use std::time::{Duration, Instant};
-
-fn bench_function_with_noop<O, N, R>(iters: u64, mut noop: N, mut routine: R) -> Duration
-where
-    N: FnMut() -> O,
-    R: FnMut() -> O,
-{
-    let start = Instant::now();
-    for _i in 0..iters {
-        black_box(noop());
-    }
-    let t_noop = start.elapsed();
-
-    let start = Instant::now();
-    for _i in 0..iters {
-        black_box(routine());
-    }
-    let t_routine = start.elapsed();
-
-    if let Some(diff) = t_routine.checked_sub(t_noop) {
-        diff
-    } else {
-        std::time::Duration::from_nanos(0)
-    }
-
-}
 
 #[inline]
 fn noop<T>(x: T) -> T {
@@ -41,13 +19,31 @@ fn add_three(a: i64, b: i64, c: i64) -> i64 {
 }
 
 fn custom(c: &mut Criterion) {
-    c.bench_function("test", |b| b.iter_custom(|iters| {
+    /*
+    c.bench_function("abs", |b| b.iter_custom(|iters| {
         bench_function_with_noop(
             iters,
             || black_box(1.0_f64),
             || black_box(1.0_f64).abs(),
         )
     }));
+    c.bench_function("abs (alternative)", |b| iter_noop(b,
+        || black_box(1.0_f64),
+        || black_box(1.0_f64).abs(),
+    ));
+    c.bench_function("abs (batched)", |b| iter_noop_batched(b,
+        |_| 1.0_f64,
+        |x| black_box(x),
+        |x| black_box(x).abs(),
+    ));
+    */
+    let mut rng = rand::thread_rng();
+    c.bench_function("abs (batched, random)", |b| iter_noop_batched(b,
+        |_| rng.gen_range(-1e3_f64, 1e3_f64),
+        |x| black_box(x),
+        |x| black_box(x),
+    ));
+
 
     /*
     c.bench_function("noop batched", move |b| {

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate rand;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, BatchSize, Throughput};
