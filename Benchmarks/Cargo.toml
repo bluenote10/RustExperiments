@@ -13,6 +13,7 @@ robust = "0.1"
 float_extras = "*"
 rand = "*"
 rug = "0.6"
+serde_json = { version = "1.0.44", features = ["arbitrary_precision"] }
 
 [dev-dependencies]
 criterion = "0.3"

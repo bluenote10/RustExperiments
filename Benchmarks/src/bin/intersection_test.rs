@@ -1,7 +1,9 @@
 extern crate mycrate;
 extern crate rand;
 
+use std::fs::File;
 use geo_types::Coordinate;
+use serde_json::{Result, Value, json};
 
 use mycrate::{
     intersection_impl, signed_area, signed_area_fast, signed_area_exact,
@@ -100,10 +102,10 @@ fn ulp_test() {
 
 
 fn signed_area_precision_test() {
-    let n = 1000;
+    let mut records: Vec<Value> = Vec::new();
+    let n = 2000;
     let mut i = 0;
-    let mut found = 0;
-    while found < 100 {
+    while i < n {
         let (a, b, c) = rand_geo::three_points_almost_colinear();
         let sa_exact = signed_area_exact(a, b, c);
         let sa_robust = signed_area(a, b, c);
@@ -112,10 +114,16 @@ fn signed_area_precision_test() {
         if diff != 0.0 {
             //println!("{} {} {}", sa_exact, sa_robust, sa_fast);
             println!("{:?} {:?} {:?} {} {}", a, b, c, diff, i);
-            found += 1;
         }
+        records.push(json!({
+            "sa_exact": sa_fast,
+            "sa_robust": sa_robust,
+            "sa_fast": sa_fast,
+        }));
         i += 1;
     }
+    let f = File::create("sa_data.json").expect("Unable to create json file.");
+    serde_json::to_writer_pretty(f, &records).expect("Unable to write json file.");
 }
 
 
