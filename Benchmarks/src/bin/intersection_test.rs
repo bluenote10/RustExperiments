@@ -116,7 +116,7 @@ fn signed_area_precision_test() {
             println!("{:?} {:?} {:?} {} {}", a, b, c, diff, i);
         }
         records.push(json!({
-            "sa_exact": sa_fast,
+            "sa_exact": sa_exact,
             "sa_robust": sa_robust,
             "sa_fast": sa_fast,
         }));
