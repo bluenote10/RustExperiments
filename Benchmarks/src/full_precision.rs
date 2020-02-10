@@ -55,7 +55,7 @@ pub fn analyze_grid<C>(
     mut cb: C,
 )
 where
-    C: FnMut(i32, i32, f64)
+    C: FnMut(i32, i32, Coordinate<f64>, f64)
 {
     for i in -delta ..= delta {
         for j in -delta ..= delta {
@@ -68,7 +68,7 @@ where
             let dist_squared_b = perp_b.clone() * perp_b.clone() / length_squared_b;
             // let sum_dist_squared = (dist_squared_a + dist_squared_b).to_f64();
             let sum_dist = dist_squared_a.to_f64().sqrt() + dist_squared_b.to_f64().sqrt();
-            cb(i, j, sum_dist);
+            cb(i, j, p, sum_dist);
         }
     }
 }

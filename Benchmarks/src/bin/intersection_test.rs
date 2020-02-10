@@ -201,61 +201,79 @@ fn get_ulp_distance(a: Coordinate<f64>, b: Coordinate<f64>) -> (i64, i64) {
 
 
 fn intersection_comparison() {
+    let n = 100;
+    let with_grid = true;
+    let grid_size = 20;
+
     let mut records: Vec<Value> = Vec::new();
-    let n = 10;
     let mut i = 0;
     while i < n {
         let (a1, a2, b1, b2) = rand_geo::intersecting_segments();
         // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
         let i_fast = intersection(a1, a2, b1, b2);
         let i_exact = intersection_exact(a1, a2, b1, b2);
-        let i_search = intersection_search(a1, a2, b1, b2);
+        // let i_search = intersection_search(a1, a2, b1, b2);
 
         let i_fast = match i_fast {
             LineIntersection::Point(p) => Some(p),
             _ => None,
         };
+        /*
         let i_search = match i_search {
             LineIntersection::Point(p) => Some(p),
             _ => None,
         };
-        if i_fast.is_none() || i_search.is_none() || i_exact.is_none() {
+        */
+        if i_fast.is_none() || i_exact.is_none() {
             println!("WARNING: Skipping iterations because a result was missing:");
-            println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
+            println!("{:?} {:?}", i_fast, i_exact);
             continue;
         }
         let i_fast = i_fast.unwrap();
-        let i_search = i_search.unwrap();
+        //let i_search = i_search.unwrap();
         let i_exact = i_exact.unwrap();
         // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
         // println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
 
         let mut grid: Vec<Value> = Vec::new();
-        analyze_grid(a1, a2, b1, b2, i_exact, 20, |i, j, dist| {
+        let mut i_min = i_exact;
+        let mut dist_min = std::f64::MAX;
+        analyze_grid(a1, a2, b1, b2, i_exact, grid_size, |i, j, p, dist| {
             grid.push(json!({
                 "i": i,
                 "j": j,
                 "dist": dist,
-            }))
+            }));
+            if dist < dist_min {
+                dist_min = dist;
+                i_min = p;
+            }
         });
 
         records.push(json!({
+            "a1": [a1.x, a1.y],
+            "a2": [a2.x, a2.y],
+            "b1": [b1.x, b1.y],
+            "b2": [b2.x, b2.y],
             "i_fast": {
-                "x": i_fast.x,
-                "y": i_fast.y,
-                "ulp_dist": get_ulp_distance(i_fast, i_exact),
+                "p": [i_fast.x, i_fast.y],
+                "ulp_dist": get_ulp_distance(i_exact, i_fast),
             },
+            /*
             "i_search": {
-                "x": i_search.x,
-                "y": i_search.y,
-                "ulp_dist": get_ulp_distance(i_search, i_exact),
+                "p": [i_search.x, i_search.y],
+                "ulp_dist": get_ulp_distance(i_exact, i_search),
             },
+            */
             "i_exact": {
-                "x": i_exact.x,
-                "y": i_exact.y,
+                "p": [i_exact.x, i_exact.y],
                 "ulp_dist": get_ulp_distance(i_exact, i_exact),
             },
-            "grid": grid,
+            "i_min": {
+                "p": [i_min.x, i_min.y],
+                "ulp_dist": get_ulp_distance(i_exact, i_min),
+            },
+            "grid": if with_grid { json!(grid) } else { Value::Null },
         }));
         i += 1;
     }
