@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import numpy as np
 import pandas as pd
 
 import matplotlib.pyplot as plt
@@ -44,6 +45,7 @@ point_names = [
     "exact",
     "min",
     "fast",
+    "new",
     # "search",
 ]
 
@@ -122,16 +124,50 @@ def plot_intersection(row):
 
 
 def plot_distributions(data):
+    points_exact = pd.DataFrame(
+        [row["i_exact"]["p"] for row in data],
+        columns=["x", "y"],
+    )
+
     names = [n for n in point_names if n != "exact"]
-    fig, axes = plt.subplots(1, len(names), figsize=(16, 8))
+    fig1, axes = plt.subplots(1, len(names), figsize=(16, 8))
+    fig2, ax_all = plt.subplots(1, 2, figsize=(16, 8))
+    fig3, ax_dists = plt.subplots(1, 2, figsize=(16, 8))
+
     for ax, name in zip(axes, names):
-        dists = pd.DataFrame(
+        points = pd.DataFrame(
+            [row["i_{}".format(name)]["p"] for row in data],
+            columns=["x", "y"],
+        )
+        deltas = points - points_exact
+        ulp_deltas = pd.DataFrame(
             [row["i_{}".format(name)]["ulp_dist"] for row in data],
             columns=["x", "y"],
         )
-        ax.plot(dists["x"], dists["y"], "o", ms=2, alpha=0.5)
+        ax.plot(ulp_deltas["x"], ulp_deltas["y"], "o", ms=2, alpha=0.5)
         ax.set_title(name)
 
+        if name not in ["exact", "min"]:
+            ax_all[0].plot(deltas["x"], deltas["y"], "o", ms=4, alpha=0.5, label=name)
+            ax_all[1].plot(ulp_deltas["x"], ulp_deltas["y"], "o", ms=4, alpha=0.5, label=name)
+
+            deltas_err = np.sqrt(deltas["x"]**2 + deltas["y"]**2)
+            ulp_deltas_err = np.sqrt(ulp_deltas["x"] ** 2 + ulp_deltas["y"] ** 2)
+
+            deltas_err = sorted(deltas_err)
+            ulp_deltas_err = sorted(ulp_deltas_err)
+
+            ax_dists[0].plot(np.arange(len(deltas_err)), deltas_err, "-", label=name)
+            ax_dists[1].plot(np.arange(len(deltas_err)), ulp_deltas_err, "-", label=name)
+
+        print(name)
+        print("Deltas:     {}    {}".format(deltas["x"].std(), deltas["y"].std()))
+        print("ULPs:       {}    {}".format(ulp_deltas["x"].std(), ulp_deltas["y"].std()))
+
+    ax_dists[0].set_yscale('log')
+    ax_dists[1].set_yscale('log')
+
+    plt.legend()
     plt.tight_layout()
     plt.subplots_adjust(top=0.90)
     plt.show()

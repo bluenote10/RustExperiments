@@ -188,6 +188,88 @@ where
     LineIntersection::None
 }
 
+
+pub fn intersection_new<F>(
+    a1: Coordinate<F>,
+    a2: Coordinate<F>,
+    b1: Coordinate<F>,
+    b2: Coordinate<F>,
+) -> LineIntersection<F>
+where
+    F: Float,
+{
+    // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+    let va = Coordinate {
+        x: a2.x - a1.x,
+        y: a2.y - a1.y,
+    };
+    let vb = Coordinate {
+        x: b2.x - b1.x,
+        y: b2.y - b1.y,
+    };
+    let e = Coordinate {
+        x: b1.x - a1.x,
+        y: b1.y - a1.y,
+    };
+    let denom = cross_product(va, vb);
+
+    if denom.abs() > F::zero() {
+        let s = cross_product(e, vb) / denom;
+        if s < F::zero() || s > F::one() {
+            return LineIntersection::None;
+        }
+        let t = cross_product(e, va) / denom;
+        if t < F::zero() || t > F::one() {
+            return LineIntersection::None;
+        }
+
+        if s == F::zero() || s == F::one() {
+            return LineIntersection::Point(mid_point(a1, s, va));
+        }
+        if t == F::zero() || t == F::one() {
+            return LineIntersection::Point(mid_point(b1, t, vb));
+        }
+
+        let len_va = va.x.abs().max(va.y.abs());
+        let len_vb = vb.x.abs().max(vb.y.abs());
+        if len_va < len_vb {
+            return LineIntersection::Point(mid_point(a1, s, va));
+        } else {
+            return LineIntersection::Point(mid_point(b1, t, vb));
+        }
+    }
+
+    let sqr_len_a = dot_product(va, va);
+    let kross = cross_product(e, va);
+    let sqr_kross = kross * kross;
+
+    if sqr_kross > F::zero() {
+        return LineIntersection::None;
+    }
+
+    let sa = dot_product(va, e) / sqr_len_a;
+    let sb = sa + dot_product(va, vb) / sqr_len_a;
+    let smin = sa.min(sb);
+    let smax = sa.max(sb);
+
+    if smin <= F::one() && smax >= F::zero() {
+        if smin == F::one() {
+            return LineIntersection::Point(mid_point(a1, smin, va));
+        }
+        if smax == F::zero() {
+            return LineIntersection::Point(mid_point(a1, smax, va));
+        }
+
+        return LineIntersection::Overlap(
+            mid_point(a1, smin.max(F::zero()), va),
+            mid_point(a1, smax.min(F::one()), va),
+        );
+    }
+
+    LineIntersection::None
+}
+
+
 fn mid_point<F>(p: Coordinate<F>, s: F, d: Coordinate<F>) -> Coordinate<F>
 where
     F: Float,

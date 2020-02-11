@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use mycrate::{
     intersection_impl, signed_area, signed_area_fast, signed_area_exact,
     LineIntersection, Float,
-    intersection, intersection_search, intersection_exact,
+    intersection, intersection_search, intersection_exact, intersection_new,
     analyze_grid,
     NextAfter,
     rand_geo,
@@ -201,9 +201,9 @@ fn get_ulp_distance(a: Coordinate<f64>, b: Coordinate<f64>) -> (i64, i64) {
 
 
 fn intersection_comparison() {
-    let n = 100;
+    let n = 1000;
     let with_grid = true;
-    let grid_size = 20;
+    let grid_size = 5;
 
     let mut records: Vec<Value> = Vec::new();
     let mut i = 0;
@@ -212,9 +212,14 @@ fn intersection_comparison() {
         // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
         let i_fast = intersection(a1, a2, b1, b2);
         let i_exact = intersection_exact(a1, a2, b1, b2);
+        let i_new = intersection_new(a1, a2, b1, b2);
         // let i_search = intersection_search(a1, a2, b1, b2);
 
         let i_fast = match i_fast {
+            LineIntersection::Point(p) => Some(p),
+            _ => None,
+        };
+        let i_new = match i_new {
             LineIntersection::Point(p) => Some(p),
             _ => None,
         };
@@ -224,12 +229,13 @@ fn intersection_comparison() {
             _ => None,
         };
         */
-        if i_fast.is_none() || i_exact.is_none() {
+        if i_fast.is_none() || i_new.is_none() || i_exact.is_none() {
             println!("WARNING: Skipping iterations because a result was missing:");
             println!("{:?} {:?}", i_fast, i_exact);
             continue;
         }
         let i_fast = i_fast.unwrap();
+        let i_new = i_new.unwrap();
         //let i_search = i_search.unwrap();
         let i_exact = i_exact.unwrap();
         // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
@@ -258,6 +264,10 @@ fn intersection_comparison() {
             "i_fast": {
                 "p": [i_fast.x, i_fast.y],
                 "ulp_dist": get_ulp_distance(i_exact, i_fast),
+            },
+            "i_new": {
+                "p": [i_new.x, i_new.y],
+                "ulp_dist": get_ulp_distance(i_exact, i_new),
             },
             /*
             "i_search": {
