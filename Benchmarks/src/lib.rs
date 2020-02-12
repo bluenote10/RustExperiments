@@ -259,6 +259,7 @@ where
             return LineIntersection::Point(mid_point(b1, t, vb));
         }
         */
+        /*
         let x = if va.x.abs() < vb.x.abs() {
             a1.x + s * va.x
         } else {
@@ -270,6 +271,50 @@ where
             b1.y + t * vb.y
         };
         return LineIntersection::Point(Coordinate{x, y});
+        */
+
+        //let mut p = mid_point(a1, s, va);
+        //let mut p = mid_point(b1, t, vb);
+        let x = if va.x.abs() < vb.x.abs() {
+            a1.x + s * va.x
+        } else {
+            b1.x + t * vb.x
+        };
+        let y = if va.y.abs() < vb.y.abs() {
+            a1.y + s * va.y
+        } else {
+            b1.y + t * vb.y
+        };
+        let mut p = Coordinate{x, y};
+
+        for i in 0 .. 1 {
+            let sa_a = signed_area(a1, a2, p);
+            let sa_b = signed_area(b1, b2, p);
+
+            println!("{} p orig = {:?}    {}    {}", i, p, sa_a, sa_b);
+            if sa_a.abs() > sa_b.abs() {
+                let len_sqr = va.x * va.x + va.y * va.y;
+                let delta = Coordinate{x: -va.y * sa_a / len_sqr, y: va.x * sa_a / len_sqr};
+                // println!("{} {} {:?}", len, dist, delta);
+                p.x = p.x - delta.x;
+                p.y = p.y - delta.y;
+                let sa_a_after = signed_area(a1, a2, p);
+                assert!(sa_a_after.abs() <= sa_a.abs());
+                println!("    change: {}", sa_a_after.abs() / sa_a.abs());
+            } else {
+                let len_sqr = vb.x * vb.x + vb.y * vb.y;
+                let delta = Coordinate{x: -vb.y * sa_b / len_sqr, y: vb.x * sa_b / len_sqr};
+                // println!("{} {} {:?}", len, dist, delta);
+                p.x = p.x - delta.x;
+                p.y = p.y - delta.y;
+                let sa_b_after = signed_area(b1, b2, p);
+                assert!(sa_b_after.abs() <= sa_b.abs());
+                println!("    change: {}", sa_b_after.abs() / sa_b.abs());
+            }
+            println!("p impr = {:?}", p);
+        }
+
+        return LineIntersection::Point(p);
     }
 
     let sqr_len_a = dot_product(va, va);

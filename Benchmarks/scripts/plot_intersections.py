@@ -161,8 +161,16 @@ def plot_distributions(data):
             ax_dists[1].plot(np.arange(len(deltas_err)), ulp_deltas_err, "-", label=name)
 
         print(name)
-        print("Deltas:     {}    {}".format(deltas["x"].std(), deltas["y"].std()))
-        print("ULPs:       {}    {}".format(ulp_deltas["x"].std(), ulp_deltas["y"].std()))
+        print("Deltas:     {}    {}    {}".format(
+            deltas["x"].abs().mean(),
+            deltas["y"].abs().mean(),
+            (deltas["x"].abs() + deltas["y"].abs()).mean()
+        ))
+        print("ULPs:       {}    {}    {}".format(
+            ulp_deltas["x"].abs().mean(),
+            ulp_deltas["y"].abs().mean(),
+            (ulp_deltas["x"].abs() + ulp_deltas["y"].abs()).mean(),
+        ))
 
     ax_dists[0].set_yscale('log')
     ax_dists[1].set_yscale('log')
