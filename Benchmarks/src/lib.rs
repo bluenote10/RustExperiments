@@ -215,6 +215,9 @@ where
 
     if denom.abs() > F::zero() {
         let s = cross_product(e, vb) / denom;
+        //let s = -(a1.x * (b2.y - b1.y) + b1.x * (a1.y - b2.y) + b2.x * (b1.y - a1.y)) / denom;
+        //println!("{} {}", s1, s);
+        //assert_eq!(s1, s);
         if s < F::zero() || s > F::one() {
             return LineIntersection::None;
         }
@@ -230,6 +233,7 @@ where
             return LineIntersection::Point(mid_point(b1, t, vb));
         }
 
+        /*
         let len_va = va.x.abs().max(va.y.abs());
         let len_vb = vb.x.abs().max(vb.y.abs());
         if len_va < len_vb {
@@ -237,6 +241,18 @@ where
         } else {
             return LineIntersection::Point(mid_point(b1, t, vb));
         }
+        */
+        let x = if va.x.abs() < vb.x.abs() {
+            a1.x + s * va.x
+        } else {
+            b1.x + t * vb.x
+        };
+        let y = if va.y.abs() < vb.y.abs() {
+            a1.y + s * va.y
+        } else {
+            b1.y + t * vb.y
+        };
+        return LineIntersection::Point(Coordinate{x, y});
     }
 
     let sqr_len_a = dot_product(va, va);
