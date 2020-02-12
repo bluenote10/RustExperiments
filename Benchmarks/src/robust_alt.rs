@@ -40,9 +40,10 @@ const ICCERRBOUND_A: f64 = (10.0 + 96.0 * EPSILON) * EPSILON;
 const ICCERRBOUND_B: f64 = (4.0 + 48.0 * EPSILON) * EPSILON;
 const ICCERRBOUND_C: f64 = (44.0 + 576.0 * EPSILON) * EPSILON * EPSILON;
 
-pub fn orient2d(pa: Coord, pb: Coord, pc: Coord) -> f64 {
-    let detleft = (pa.x - pc.x) * (pb.y - pc.y);
-    let detright = (pa.y - pc.y) * (pb.x - pc.x);
+#[inline]
+pub fn orient2d(pax: f64, pay: f64, pbx: f64, pby: f64, pcx: f64, pcy: f64) -> f64 {
+    let detleft = (pax - pcx) * (pby - pcy);
+    let detright = (pay - pcy) * (pbx - pcx);
     let det = detleft - detright;
 
     let detsum = if detleft > 0.0 {
@@ -64,15 +65,15 @@ pub fn orient2d(pa: Coord, pb: Coord, pc: Coord) -> f64 {
     if det >= errbound || -det >= errbound {
         det
     } else {
-        orient2dadapt(pa, pb, pc, detsum)
+        orient2dadapt(pax, pay, pbx, pby, pcx, pcy, detsum)
     }
 }
 
-fn orient2dadapt(pa: Coord, pb: Coord, pc: Coord, detsum: f64) -> f64 {
-    let acx = pa.x - pc.x;
-    let bcx = pb.x - pc.x;
-    let acy = pa.y - pc.y;
-    let bcy = pb.y - pc.y;
+fn orient2dadapt(pax: f64, pay: f64, pbx: f64, pby: f64, pcx: f64, pcy: f64, detsum: f64) -> f64 {
+    let acx = pax - pcx;
+    let bcx = pbx - pcx;
+    let acy = pay - pcy;
+    let bcy = pby - pcy;
 
     let (detleft, detlefttail) = two_product(acx, bcy);
     let (detright, detrighttail) = two_product(acy, bcx);
@@ -86,10 +87,10 @@ fn orient2dadapt(pa: Coord, pb: Coord, pc: Coord, detsum: f64) -> f64 {
         return det;
     }
 
-    let acxtail = two_diff_tail(pa.x, pc.x, acx);
-    let bcxtail = two_diff_tail(pb.x, pc.x, bcx);
-    let acytail = two_diff_tail(pa.y, pc.y, acy);
-    let bcytail = two_diff_tail(pb.y, pc.y, bcy);
+    let acxtail = two_diff_tail(pax, pcx, acx);
+    let bcxtail = two_diff_tail(pbx, pcx, bcx);
+    let acytail = two_diff_tail(pay, pcy, acy);
+    let bcytail = two_diff_tail(pby, pcy, bcy);
 
     if acxtail == 0.0 && acytail == 0.0 && bcxtail == 0.0 && bcytail == 0.0 {
         return det;
@@ -1122,7 +1123,7 @@ mod test {
         let p4 = Coord { x: ::std::f64::MIN_POSITIVE, y: -::std::f64::MIN_POSITIVE };
 
         for &(p, sign) in &[(p1, 0.0), (p2, 0.0), (p3, 1.0), (p4, -1.0)] {
-            let det = orient2d(from, to, p);
+            let det = orient2d(from.x, from.y, to.x, to.y, p.x, p.y);
             assert!(det == sign || det.signum() == sign.signum());
         }
     }

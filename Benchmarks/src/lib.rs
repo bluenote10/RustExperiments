@@ -4,6 +4,7 @@ use robust::{Coord, orient2d};
 mod helper;
 mod full_precision;
 pub mod rand_geo;
+pub mod robust_alt;
 
 pub use helper::Float;
 pub use helper::NextAfter;
@@ -45,6 +46,22 @@ where
         F::zero()
     }
     */
+}
+
+#[inline]
+pub fn signed_area_alt<F>(p0: Coordinate<F>, p1: Coordinate<F>, p2: Coordinate<F>) -> F
+where
+    F: Float,
+{
+    let res = robust_alt::orient2d(
+        p0.x.to_f64().unwrap(),
+        p0.y.to_f64().unwrap(),
+        p1.x.to_f64().unwrap(),
+        p1.y.to_f64().unwrap(),
+        p2.x.to_f64().unwrap(),
+        p2.y.to_f64().unwrap(),
+    );
+    F::from(res).unwrap()
 }
 
 #[inline]
