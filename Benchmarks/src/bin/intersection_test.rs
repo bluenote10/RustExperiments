@@ -200,7 +200,96 @@ fn get_ulp_distance(a: Coordinate<f64>, b: Coordinate<f64>) -> (i64, i64) {
 }
 
 
-fn intersection_comparison() {
+fn run_intersection_impls(
+    records: &mut Vec<Value>,
+    a1: Coordinate<f64>,
+    a2: Coordinate<f64>,
+    b1: Coordinate<f64>,
+    b2: Coordinate<f64>,
+    with_grid: bool,
+    grid_size: i32,
+) -> bool {
+    // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+    let i_fast = intersection(a1, a2, b1, b2);
+    let i_exact = intersection_exact(a1, a2, b1, b2);
+    let i_new = intersection_new(a1, a2, b1, b2);
+    // let i_search = intersection_search(a1, a2, b1, b2);
+
+    let i_fast = match i_fast {
+        LineIntersection::Point(p) => Some(p),
+        _ => None,
+    };
+    let i_new = match i_new {
+        LineIntersection::Point(p) => Some(p),
+        _ => None,
+    };
+    /*
+    let i_search = match i_search {
+        LineIntersection::Point(p) => Some(p),
+        _ => None,
+    };
+    */
+    if i_fast.is_none() || i_new.is_none() || i_exact.is_none() {
+        println!("WARNING: Skipping iterations because a result was missing:");
+        println!("{:?} {:?}", i_fast, i_exact);
+        return false;
+    }
+    let i_fast = i_fast.unwrap();
+    let i_new = i_new.unwrap();
+    //let i_search = i_search.unwrap();
+    let i_exact = i_exact.unwrap();
+    // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+    // println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
+
+    let mut grid: Vec<Value> = Vec::new();
+    let mut i_min = i_exact;
+    let mut dist_min = std::f64::MAX;
+    analyze_grid(a1, a2, b1, b2, i_exact, grid_size, |i, j, p, dist| {
+        grid.push(json!({
+            "i": i,
+            "j": j,
+            "dist": dist,
+        }));
+        if dist < dist_min {
+            dist_min = dist;
+            i_min = p;
+        }
+    });
+
+    records.push(json!({
+        "a1": [a1.x, a1.y],
+        "a2": [a2.x, a2.y],
+        "b1": [b1.x, b1.y],
+        "b2": [b2.x, b2.y],
+        "i_fast": {
+            "p": [i_fast.x, i_fast.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_fast),
+        },
+        "i_new": {
+            "p": [i_new.x, i_new.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_new),
+        },
+        /*
+        "i_search": {
+            "p": [i_search.x, i_search.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_search),
+        },
+        */
+        "i_exact": {
+            "p": [i_exact.x, i_exact.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_exact),
+        },
+        "i_min": {
+            "p": [i_min.x, i_min.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_min),
+        },
+        "grid": if with_grid { json!(grid) } else { Value::Null },
+    }));
+    return true;
+}
+
+
+fn intersection_comparison_batch() {
     let n = 1000;
     let with_grid = true;
     let grid_size = 5;
@@ -209,83 +298,75 @@ fn intersection_comparison() {
     let mut i = 0;
     while i < n {
         let (a1, a2, b1, b2) = rand_geo::intersecting_segments();
-        // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
-        let i_fast = intersection(a1, a2, b1, b2);
-        let i_exact = intersection_exact(a1, a2, b1, b2);
-        let i_new = intersection_new(a1, a2, b1, b2);
-        // let i_search = intersection_search(a1, a2, b1, b2);
-
-        let i_fast = match i_fast {
-            LineIntersection::Point(p) => Some(p),
-            _ => None,
-        };
-        let i_new = match i_new {
-            LineIntersection::Point(p) => Some(p),
-            _ => None,
-        };
-        /*
-        let i_search = match i_search {
-            LineIntersection::Point(p) => Some(p),
-            _ => None,
-        };
-        */
-        if i_fast.is_none() || i_new.is_none() || i_exact.is_none() {
-            println!("WARNING: Skipping iterations because a result was missing:");
-            println!("{:?} {:?}", i_fast, i_exact);
-            continue;
+        let valid = run_intersection_impls(&mut records, a1, a2, b1, b2, with_grid, grid_size);
+        if valid {
+            i += 1;
         }
-        let i_fast = i_fast.unwrap();
-        let i_new = i_new.unwrap();
-        //let i_search = i_search.unwrap();
-        let i_exact = i_exact.unwrap();
-        // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
-        // println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
+    }
+    let f = File::create("intersection_data.json").expect("Unable to create json file.");
+    serde_json::to_writer_pretty(f, &records).expect("Unable to write json file.");
+}
 
-        let mut grid: Vec<Value> = Vec::new();
-        let mut i_min = i_exact;
-        let mut dist_min = std::f64::MAX;
-        analyze_grid(a1, a2, b1, b2, i_exact, grid_size, |i, j, p, dist| {
-            grid.push(json!({
-                "i": i,
-                "j": j,
-                "dist": dist,
-            }));
-            if dist < dist_min {
-                dist_min = dist;
-                i_min = p;
-            }
-        });
 
-        records.push(json!({
-            "a1": [a1.x, a1.y],
-            "a2": [a2.x, a2.y],
-            "b1": [b1.x, b1.y],
-            "b2": [b2.x, b2.y],
-            "i_fast": {
-                "p": [i_fast.x, i_fast.y],
-                "ulp_dist": get_ulp_distance(i_exact, i_fast),
-            },
-            "i_new": {
-                "p": [i_new.x, i_new.y],
-                "ulp_dist": get_ulp_distance(i_exact, i_new),
-            },
-            /*
-            "i_search": {
-                "p": [i_search.x, i_search.y],
-                "ulp_dist": get_ulp_distance(i_exact, i_search),
-            },
-            */
-            "i_exact": {
-                "p": [i_exact.x, i_exact.y],
-                "ulp_dist": get_ulp_distance(i_exact, i_exact),
-            },
-            "i_min": {
-                "p": [i_min.x, i_min.y],
-                "ulp_dist": get_ulp_distance(i_exact, i_min),
-            },
-            "grid": if with_grid { json!(grid) } else { Value::Null },
-        }));
-        i += 1;
+fn parse_case(json: &Value) -> (Coordinate<f64>, Coordinate<f64>, Coordinate<f64>, Coordinate<f64>) {
+    (
+        Coordinate{x: json["a1"][0].as_f64().unwrap(), y: json["a1"][1].as_f64().unwrap()},
+        Coordinate{x: json["a2"][0].as_f64().unwrap(), y: json["a2"][1].as_f64().unwrap()},
+        Coordinate{x: json["b1"][0].as_f64().unwrap(), y: json["b1"][1].as_f64().unwrap()},
+        Coordinate{x: json["b2"][0].as_f64().unwrap(), y: json["b2"][1].as_f64().unwrap()},
+    )
+}
+
+
+fn intersection_comparison_cases() {
+    let with_grid = true;
+    let grid_size = 5;
+
+    let cases = [
+        json!({
+            "a1": [
+                391.0978410877108,
+                619.8964256685265
+            ],
+            "a2": [
+                -12092.656553287086,
+                -4938.044114553583
+            ],
+            "b1": [
+                326.22364298229877,
+                594.3632464541117
+            ],
+            "b2": [
+                -11541.1987872296,
+                -4721.001432237145
+            ],
+        }),
+        json!({
+            "a1": [
+              -785.7125955382828,
+              -713.8181948358664
+            ],
+            "a2": [
+              10144.600315300151,
+              8115.696747995943
+            ],
+            "b1": [
+              -127.3360851100947,
+              -189.7262780505597
+            ],
+            "b2": [
+              4683.780800672945,
+              3768.6835704172927
+            ],
+            "delta": 5.718628748594777e-12
+        }),
+    ];
+
+    let mut records: Vec<Value> = Vec::new();
+    for case in cases.iter() {
+        let (a1, a2, b1, b2) = parse_case(&case);
+        let valid = run_intersection_impls(&mut records, a1, a2, b1, b2, with_grid, grid_size);
+        assert!(valid);
     }
     let f = File::create("intersection_data.json").expect("Unable to create json file.");
     serde_json::to_writer_pretty(f, &records).expect("Unable to write json file.");
@@ -296,7 +377,8 @@ fn main() {
     // ulp_test();
     // signed_area_precision_test();
     // intersection_search_test()
-    intersection_comparison();
+    // intersection_comparison_batch();
+    intersection_comparison_cases();
 }
 
 /*
@@ -321,6 +403,26 @@ Problem cases:
     -4721.001432237145
   ],
   "delta": 1.9979133208012158e-11
+}
+
+{
+  "a1": [
+    -785.7125955382828,
+    -713.8181948358664
+  ],
+  "a2": [
+    10144.600315300151,
+    8115.696747995943
+  ],
+  "b1": [
+    -127.3360851100947,
+    -189.7262780505597
+  ],
+  "b2": [
+    4683.780800672945,
+    3768.6835704172927
+  ],
+  "delta": 5.718628748594777e-12
 }
 
 */

@@ -230,6 +230,11 @@ where
     };
     let denom = cross_product(va, vb);
 
+    println!("va: {:?}", va);
+    println!("vb: {:?}", vb);
+    println!("ab:  {:?}", e);
+    println!("denom:  {:?}", denom);
+
     if denom.abs() > F::zero() {
         let s = cross_product(e, vb) / denom;
         //let s = -(a1.x * (b2.y - b1.y) + b1.x * (a1.y - b2.y) + b2.x * (b1.y - a1.y)) / denom;
@@ -242,6 +247,10 @@ where
         if t < F::zero() || t > F::one() {
             return LineIntersection::None;
         }
+
+        println!("ab x vb:  {:?}    =>    s = {}", cross_product(e, vb), s);
+        println!("ab x va:  {:?}    =>    t = {}", cross_product(e, va), t);
+
 
         if s == F::zero() || s == F::one() {
             return LineIntersection::Point(mid_point(a1, s, va));
