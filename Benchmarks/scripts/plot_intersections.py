@@ -81,6 +81,7 @@ def plot_intersection_grid(ax, row):
             return 'i={} j={} '.format(i, j)
 
     ax.format_coord = format_coord
+    plt.legend()
 
 
 def plot_intersection_points(ax, row):
@@ -111,6 +112,10 @@ def plot_intersection_points(ax, row):
 
 
 def plot_intersection(row):
+    print(json.dumps(
+        {k: v for k, v in row.to_dict().items() if k != "grid" and not k.startswith("i_")},
+        indent=2, sort_keys=True,
+    ))
     fig, axes = plt.subplots(1, 2, figsize=(16, 8))
 
     plot_intersection_grid(axes[0], row)
@@ -190,6 +195,13 @@ def main():
     df = pd.DataFrame(data)
 
     plot_distributions(data)
+
+    # sort df by delta
+    df["delta"] = (
+        df["i_new"].apply(lambda row: np.array(row["p"])) -
+        df["i_exact"].apply(lambda row: np.array(row["p"]))
+    ).apply(lambda row: np.sqrt((row ** 2).mean()))
+    df = df.sort_values("delta", ascending=False).reset_index(drop=True)
 
     for _, row in df.iterrows():
         plot_intersection(row)
