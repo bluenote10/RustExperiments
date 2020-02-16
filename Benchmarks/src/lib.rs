@@ -299,7 +299,7 @@ where
                 p.x = p.x - delta.x;
                 p.y = p.y - delta.y;
                 let sa_a_after = signed_area(a1, a2, p);
-                assert!(sa_a_after.abs() <= sa_a.abs());
+                //assert!(sa_a_after.abs() <= sa_a.abs());
                 println!("    change: {}", sa_a_after.abs() / sa_a.abs());
             } else {
                 let len_sqr = vb.x * vb.x + vb.y * vb.y;
@@ -308,7 +308,7 @@ where
                 p.x = p.x - delta.x;
                 p.y = p.y - delta.y;
                 let sa_b_after = signed_area(b1, b2, p);
-                assert!(sa_b_after.abs() <= sa_b.abs());
+                //assert!(sa_b_after.abs() <= sa_b.abs());
                 println!("    change: {}", sa_b_after.abs() / sa_b.abs());
             }
             println!("p impr = {:?}", p);

@@ -75,6 +75,24 @@ where
 
 
 #[inline]
+fn convert_to_f64(r: &Rational) -> f64 {
+    let x = r.to_f64();
+    let x_lo = x.nextafter_steps(-1);
+    let x_hi = x.nextafter_steps(1);
+    let delta_lo = (Rational::from_f64(x_lo).unwrap() - r).abs().to_f64();
+    let delta_mid = (Rational::from_f64(x).unwrap() - r).abs().to_f64();
+    let delta_hi = (Rational::from_f64(x_hi).unwrap() - r).abs().to_f64();
+
+    if delta_lo < delta_mid && delta_lo < delta_mid {
+        x_lo
+    } else if delta_hi < delta_mid && delta_hi < delta_mid {
+        x_hi
+    } else {
+        x
+    }
+}
+
+#[inline]
 #[allow(dead_code)]
 pub fn intersection_exact<F>(
     a1: Coordinate<F>,
@@ -130,8 +148,8 @@ where
     let i_y = a1y.clone() + (&t * ay);
 
     Some(Coordinate{
-        x: F::from(i_x.to_f64()).unwrap(),
-        y: F::from(i_y.to_f64()).unwrap(),
+        x: F::from(convert_to_f64(&i_x)).unwrap(),
+        y: F::from(convert_to_f64(&i_y)).unwrap(),
     })
 }
 
