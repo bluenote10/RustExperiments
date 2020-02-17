@@ -313,7 +313,7 @@ where
             let sa_a = signed_area(a1, a2, p);
             let sa_b = signed_area(b1, b2, p);
 
-            println!("{} p orig = {:?}    {}    {}", i, p, sa_a, sa_b);
+            // println!("{} p orig = {:?}    {}    {}", i, p, sa_a, sa_b);
             if sa_a.abs() > sa_b.abs() {
                 let len_sqr = va.x * va.x + va.y * va.y;
                 let delta = Coordinate{x: -va.y * sa_a / len_sqr, y: va.x * sa_a / len_sqr};
@@ -322,7 +322,7 @@ where
                 p.y = p.y - delta.y;
                 let sa_a_after = signed_area(a1, a2, p);
                 //assert!(sa_a_after.abs() <= sa_a.abs());
-                println!("    change: {}", sa_a_after.abs() / sa_a.abs());
+                // println!("    change: {}", sa_a_after.abs() / sa_a.abs());
             } else {
                 let len_sqr = vb.x * vb.x + vb.y * vb.y;
                 let delta = Coordinate{x: -vb.y * sa_b / len_sqr, y: vb.x * sa_b / len_sqr};
@@ -331,9 +331,9 @@ where
                 p.y = p.y - delta.y;
                 let sa_b_after = signed_area(b1, b2, p);
                 //assert!(sa_b_after.abs() <= sa_b.abs());
-                println!("    change: {}", sa_b_after.abs() / sa_b.abs());
+                // println!("    change: {}", sa_b_after.abs() / sa_b.abs());
             }
-            println!("p impr = {:?}", p);
+            // println!("p impr = {:?}", p);
         }
 
         return LineIntersection::Point(p);
@@ -392,12 +392,14 @@ where
         x: b1.x - a1.x,
         y: b1.y - a1.y,
     };
-    let denom = cross_product(va, vb);
+    // let denom = cross_product(va, vb);
 
+    /*
     println!("va: {:?}", va);
     println!("vb: {:?}", vb);
     println!("ab:  {:?}", e);
     println!("denom:  {:?}", denom);
+    */
 
     let va_x = SOE::from_sub(a2.x.to_f64().unwrap(), a1.x.to_f64().unwrap());
     let va_y = SOE::from_sub(a2.y.to_f64().unwrap(), a1.y.to_f64().unwrap());
@@ -407,33 +409,37 @@ where
     let e_y = SOE::from_sub(b1.y.to_f64().unwrap(), a1.y.to_f64().unwrap());
     let denom_soe = cross_product_soe(va_x, va_y, vb_x, vb_y);
 
+    /*
     println!("va: {} {}", va_x, va_y);
     println!("vb: {} {}", vb_x, vb_y);
     println!("denom_soe: {}", denom_soe);
+    */
 
 
-    if denom.abs() > F::zero() {
-        let s = cross_product(e, vb) / denom;
+    if denom_soe.to_f64().abs() > 0. {
+        // let s = cross_product(e, vb) / denom;
         let s_cp = cross_product_soe(e_x, e_y, vb_x, vb_y);
         let s_soe = s_cp / denom_soe;
         //let s = -(a1.x * (b2.y - b1.y) + b1.x * (a1.y - b2.y) + b2.x * (b1.y - a1.y)) / denom;
         //println!("{} {}", s1, s);
         //assert_eq!(s1, s);
-        if s < F::zero() || s > F::one() {
+        if s_soe.to_f64() < 0. || s_soe.to_f64() > 1. {
             return LineIntersection::None;
         }
-        let t = cross_product(e, va) / denom;
+        // let t = cross_product(e, va) / denom;
         let t_cp = cross_product_soe(e_x, e_y, va_x, va_y);
         let t_soe = t_cp / denom_soe;
-        if t < F::zero() || t > F::one() {
+        if t_soe.to_f64() < 0. || t_soe.to_f64() > 1. {
             return LineIntersection::None;
         }
 
+        /*
         println!("ab x vb:  {:?}    =>    s = {}", cross_product(e, vb), s);
         println!("ab x va:  {:?}    =>    t = {}", cross_product(e, va), t);
 
         println!("ab x vb:  {}    =>    s = {}", s_cp, s_soe);
         println!("ab x va:  {}    =>    t = {}", t_cp, t_soe);
+        */
 
         let p = Coordinate {
             x: F::from((SOE::from_f64(a1.x.to_f64().unwrap()) + s_soe * va_x).to_f64()).unwrap(),

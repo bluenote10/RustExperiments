@@ -9,7 +9,7 @@ use utils::{bench_function_with_noop, iter_noop_batched};
 
 use mycrate::{
     signed_area, signed_area_alt, signed_area_fast, signed_area_exact,
-    intersection, LineIntersection,
+    intersection_fast, intersection_fast2, intersection_soe, intersection_exact, LineIntersection,
     rand_geo, robust_alt,
 };
 
@@ -132,6 +132,7 @@ fn bench_signed_area(c: &mut Criterion) {
 
 
 fn bench_intersection(c: &mut Criterion) {
+    /*
     c.bench_function("intersection", |b| b.iter_custom(|iters| {
         bench_function_with_noop(
             iters,
@@ -144,13 +145,35 @@ fn bench_intersection(c: &mut Criterion) {
             ),
         )
     }));
+    */
+    c.bench_function("intersection_fast", |b| iter_noop_batched(b,
+        |_| rand_geo::intersecting_segments(),
+        |(_, _, _, _)| LineIntersection::Point(Coordinate{x: 0f64, y: 0f64}),
+        |(a1, a2, b1, b2)| intersection_fast(a1, a2, b1, b2),
+    ));
+    c.bench_function("intersection_fast2", |b| iter_noop_batched(b,
+        |_| rand_geo::intersecting_segments(),
+        |(_, _, _, _)| LineIntersection::Point(Coordinate{x: 0f64, y: 0f64}),
+        |(a1, a2, b1, b2)| intersection_fast2(a1, a2, b1, b2),
+    ));
+    c.bench_function("intersection_soe", |b| iter_noop_batched(b,
+        |_| rand_geo::intersecting_segments(),
+        |(_, _, _, _)| LineIntersection::Point(Coordinate{x: 0f64, y: 0f64}),
+        |(a1, a2, b1, b2)| intersection_soe(a1, a2, b1, b2),
+    ));
+    c.bench_function("intersection_exact", |b| iter_noop_batched(b,
+        |_| rand_geo::intersecting_segments(),
+        |(_, _, _, _)| Some(Coordinate{x: 0f64, y: 0f64}),
+        |(a1, a2, b1, b2)| intersection_exact(a1, a2, b1, b2),
+    ));
+
 }
 
 
 criterion_group!(
     benches,
     //basics,
-    bench_signed_area,
-    //bench_intersection,
+    //bench_signed_area,
+    bench_intersection,
 );
 criterion_main!(benches);

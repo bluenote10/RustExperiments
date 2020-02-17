@@ -1141,17 +1141,17 @@ impl SOE {
     pub fn from_expansion(x3: f64, x2: f64, x1: f64, x0: f64) -> SOE {
         let t = x3 + x2;
         if t - x3 - x2 != 0. {
-            println!("Constructing from 1. term");
+            // println!("Constructing from 1. term");
             return SOE{x_maj: x3, x_min: x0 + x1 + x2};
         }
 
         let t = x3 + x2 + x1;
         if t - x3 - x2 - x1 != 0. {
-            println!("Constructing from 1. + 2. term");
+            // println!("Constructing from 1. + 2. term");
             return SOE{x_maj: x2 + x3, x_min: x0 + x1};
         }
 
-        println!("Constructing from 1. + 2. + 3. term");
+        // println!("Constructing from 1. + 2. + 3. term");
         return SOE{x_maj: x1 + x2 + x3, x_min: x0};
     }
 
@@ -1210,10 +1210,10 @@ impl Mul for SOE {
         let b = SOE::from_mul(self.x_maj, that.x_min);
         let c = SOE::from_mul(self.x_min, that.x_maj);
         let d = SOE::from_mul(self.x_min, that.x_min);
-        println!("a = {}", a);
-        println!("b = {}", b);
-        println!("c = {}", c);
-        println!("d = {}", d);
+        // println!("a = {}", a);
+        // println!("b = {}", b);
+        // println!("c = {}", c);
+        // println!("d = {}", d);
         return d + c + b + a;
         /*
         let soe_hi = SOE::from_scale_expansion(self, that.x_maj);
@@ -1228,12 +1228,12 @@ impl Div for SOE {
     #[inline]
     fn div(self, that: Self) -> Self {
         let fac1 = self.to_f64() / that.to_f64();
-        println!("fac1 = {}", fac1);
+        // println!("fac1 = {}", fac1);
         // let tmp = SOE{x_maj: that.x_maj * fac1, x_min: that.x_min * fac1};
         let tmp = that * SOE{x_maj: fac1, x_min: 0.};
         let rem = self - tmp;
-        println!("tmp = {}", tmp);
-        println!("rem = {}", rem);
+        // println!("tmp = {}", tmp);
+        // println!("rem = {}", rem);
         let fac2 = rem.to_f64() / that.to_f64();
         SOE{x_maj: fac1, x_min: fac2}
     }
