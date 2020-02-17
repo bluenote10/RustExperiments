@@ -44,8 +44,9 @@ def parse_args():
 point_names = [
     "exact",
     "min",
-    "fast",
-    "new",
+    "fast1",
+    "fast2",
+    "soe",
     # "search",
 ]
 
@@ -189,7 +190,6 @@ def plot_distributions(data):
 def main():
     args = parse_args()
     filename = args.file
-    interactive = True # args.interactive
 
     data = json.load(open(filename))
     df = pd.DataFrame(data)
@@ -198,30 +198,13 @@ def main():
 
     # sort df by delta
     df["delta"] = (
-        df["i_new"].apply(lambda row: np.array(row["p"])) -
+        df["i_soe"].apply(lambda row: np.array(row["p"])) -
         df["i_exact"].apply(lambda row: np.array(row["p"]))
     ).apply(lambda row: np.sqrt((row ** 2).mean()))
     df = df.sort_values("delta", ascending=False).reset_index(drop=True)
 
     for _, row in df.iterrows():
         plot_intersection(row)
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 7), sharex=True, sharey=True)
-    plot(axes[0], df, "sa_exact", "sa_fast")
-    plot(axes[1], df, "sa_exact", "sa_robust")
-    plot(axes[2], df, "sa_robust", "sa_fast")
-
-    fig, axes = plt.subplots(1, 2, figsize=(15, 7))
-    axes[0].plot(df["sa_exact"], df["rel_err_robust"], "o", ms=2)
-    axes[1].plot(df["sa_exact"], df["rel_err_fast"], "o", ms=2)
-
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.90)
-
-    if interactive:
-        plt.show()
-
-    plt.close(fig)
 
 
 if __name__ == "__main__":

@@ -6,12 +6,13 @@ use geo_types::Coordinate;
 use serde_json::{Value, json};
 
 use mycrate::{
-    intersection_impl, signed_area, signed_area_fast, signed_area_exact,
+    signed_area, signed_area_fast, signed_area_exact,
     LineIntersection, Float,
-    intersection, intersection_search, intersection_exact, intersection_new,
+    intersection_fast, intersection_fast2, intersection_soe, intersection_search, intersection_exact,
     analyze_grid,
     NextAfter,
     rand_geo,
+    robust_alt,
 };
 
 
@@ -65,7 +66,7 @@ fn refinement_test() {
     let b1 = Coordinate { x: 1.250012525025, y: 531.0 };
     let b2 = Coordinate { x: 1.2500125250252, y: -531.0 };
 
-    let inter = intersection_impl(a1, a2, b1, b2);
+    let inter = intersection_fast(a1, a2, b1, b2);
     let inter = match inter {
         LineIntersection::Point(p) => Some(p),
         _ => None
@@ -210,34 +211,21 @@ fn run_intersection_impls(
     grid_size: i32,
 ) -> bool {
     // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
-    let i_fast = intersection(a1, a2, b1, b2);
+    let i_fast1 = intersection_fast(a1, a2, b1, b2).get_point();
+    let i_fast2 = intersection_fast2(a1, a2, b1, b2).get_point();
+    let i_soe = intersection_soe(a1, a2, b1, b2).get_point();
     let i_exact = intersection_exact(a1, a2, b1, b2);
-    let i_new = intersection_new(a1, a2, b1, b2);
-    // let i_search = intersection_search(a1, a2, b1, b2);
 
-    let i_fast = match i_fast {
-        LineIntersection::Point(p) => Some(p),
-        _ => None,
-    };
-    let i_new = match i_new {
-        LineIntersection::Point(p) => Some(p),
-        _ => None,
-    };
-    /*
-    let i_search = match i_search {
-        LineIntersection::Point(p) => Some(p),
-        _ => None,
-    };
-    */
-    if i_fast.is_none() || i_new.is_none() || i_exact.is_none() {
+    if i_fast1.is_none() || i_fast2.is_none() || i_soe.is_none() || i_exact.is_none() {
         println!("WARNING: Skipping iterations because a result was missing:");
-        println!("{:?} {:?}", i_fast, i_exact);
+        println!("{:?} {:?} {:?} {:?}", i_fast1, i_fast2, i_exact, i_soe);
         return false;
     }
-    let i_fast = i_fast.unwrap();
-    let i_new = i_new.unwrap();
-    //let i_search = i_search.unwrap();
+    let i_fast1 = i_fast1.unwrap();
+    let i_fast2 = i_fast2.unwrap();
+    let i_soe = i_soe.unwrap();
     let i_exact = i_exact.unwrap();
+
     // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
     // println!("{:?} {:?} {:?}", i_fast, i_search, i_exact);
 
@@ -261,20 +249,18 @@ fn run_intersection_impls(
         "a2": [a2.x, a2.y],
         "b1": [b1.x, b1.y],
         "b2": [b2.x, b2.y],
-        "i_fast": {
-            "p": [i_fast.x, i_fast.y],
-            "ulp_dist": get_ulp_distance(i_exact, i_fast),
+        "i_fast1": {
+            "p": [i_fast1.x, i_fast1.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_fast1),
         },
-        "i_new": {
-            "p": [i_new.x, i_new.y],
-            "ulp_dist": get_ulp_distance(i_exact, i_new),
+        "i_fast2": {
+            "p": [i_fast2.x, i_fast2.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_fast2),
         },
-        /*
-        "i_search": {
-            "p": [i_search.x, i_search.y],
-            "ulp_dist": get_ulp_distance(i_exact, i_search),
+        "i_soe": {
+            "p": [i_soe.x, i_soe.y],
+            "ulp_dist": get_ulp_distance(i_exact, i_soe),
         },
-        */
         "i_exact": {
             "p": [i_exact.x, i_exact.y],
             "ulp_dist": get_ulp_distance(i_exact, i_exact),
@@ -373,12 +359,32 @@ fn intersection_comparison_cases() {
 }
 
 
+fn ops_test() {
+    use robust_alt::SOE;
+
+    let a = SOE::from_f64(0.5);
+    let b = SOE::from_f64(0.1);
+    let c = SOE::from_sub(0.5, 0.1);
+    println!("{}", c);
+
+    let a = SOE::from_f64(1.0);
+    let b = SOE::from_f64(10.);
+    let c = a / b;
+    println!("{}", c);
+
+    let a = SOE::from_sub(0.5, 0.1);
+    let a = SOE::from_sub(0.5, 0.4);
+    let c = a / b;
+    println!("{}", c);
+}
+
 fn main() {
     // ulp_test();
     // signed_area_precision_test();
     // intersection_search_test()
-    // intersection_comparison_batch();
-    intersection_comparison_cases();
+    intersection_comparison_batch();
+    // intersection_comparison_cases();
+    // ops_test();
 }
 
 /*

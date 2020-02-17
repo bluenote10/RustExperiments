@@ -11,6 +11,7 @@ pub use helper::NextAfter;
 pub use full_precision::{
     signed_area_exact, intersection_exact, analyze_grid,
 };
+use robust_alt::SOE;
 
 // ----------------------------------------------------------------------------
 // Original signed area
@@ -86,6 +87,18 @@ where
     Overlap(Coordinate<F>, Coordinate<F>),
 }
 
+impl<F> LineIntersection<F>
+where
+    F: Float,
+{
+    pub fn get_point(self) -> Option<Coordinate<F>> {
+        match self {
+            LineIntersection::Point(p) => Some(p),
+            _ => None,
+        }
+    }
+}
+
 pub fn intersection<F>(
     a1: Coordinate<F>,
     a2: Coordinate<F>,
@@ -95,7 +108,7 @@ pub fn intersection<F>(
 where
     F: Float,
 {
-    let inter = intersection_impl(a1, a2, b1, b2);
+    let inter = intersection_fast(a1, a2, b1, b2);
     match inter {
         LineIntersection::Point(mut p) => {
             let a_min_x = a1.x.min(a2.x);
@@ -128,7 +141,7 @@ where
     }
 }
 
-pub fn intersection_impl<F>(
+pub fn intersection_fast<F>(
     a1: Coordinate<F>,
     a2: Coordinate<F>,
     b1: Coordinate<F>,
@@ -206,7 +219,7 @@ where
 }
 
 
-pub fn intersection_new<F>(
+pub fn intersection_fast2<F>(
     a1: Coordinate<F>,
     a2: Coordinate<F>,
     b1: Coordinate<F>,
@@ -230,10 +243,10 @@ where
     };
     let denom = cross_product(va, vb);
 
-    println!("va: {:?}", va);
-    println!("vb: {:?}", vb);
-    println!("ab:  {:?}", e);
-    println!("denom:  {:?}", denom);
+    // println!("va: {:?}", va);
+    // println!("vb: {:?}", vb);
+    // println!("ab:  {:?}", e);
+    // println!("denom:  {:?}", denom);
 
     if denom.abs() > F::zero() {
         let s = cross_product(e, vb) / denom;
@@ -248,8 +261,8 @@ where
             return LineIntersection::None;
         }
 
-        println!("ab x vb:  {:?}    =>    s = {}", cross_product(e, vb), s);
-        println!("ab x va:  {:?}    =>    t = {}", cross_product(e, va), t);
+        // println!("ab x vb:  {:?}    =>    s = {}", cross_product(e, vb), s);
+        // println!("ab x va:  {:?}    =>    t = {}", cross_product(e, va), t);
 
 
         if s == F::zero() || s == F::one() {
@@ -357,6 +370,118 @@ where
 }
 
 
+pub fn intersection_soe<F>(
+    a1: Coordinate<F>,
+    a2: Coordinate<F>,
+    b1: Coordinate<F>,
+    b2: Coordinate<F>,
+) -> LineIntersection<F>
+where
+    F: Float,
+{
+    // println!("{:?} {:?} {:?} {:?}", a1, a2, b1, b2);
+    let va = Coordinate {
+        x: a2.x - a1.x,
+        y: a2.y - a1.y,
+    };
+    let vb = Coordinate {
+        x: b2.x - b1.x,
+        y: b2.y - b1.y,
+    };
+    let e = Coordinate {
+        x: b1.x - a1.x,
+        y: b1.y - a1.y,
+    };
+    let denom = cross_product(va, vb);
+
+    println!("va: {:?}", va);
+    println!("vb: {:?}", vb);
+    println!("ab:  {:?}", e);
+    println!("denom:  {:?}", denom);
+
+    let va_x = SOE::from_sub(a2.x.to_f64().unwrap(), a1.x.to_f64().unwrap());
+    let va_y = SOE::from_sub(a2.y.to_f64().unwrap(), a1.y.to_f64().unwrap());
+    let vb_x = SOE::from_sub(b2.x.to_f64().unwrap(), b1.x.to_f64().unwrap());
+    let vb_y = SOE::from_sub(b2.y.to_f64().unwrap(), b1.y.to_f64().unwrap());
+    let e_x = SOE::from_sub(b1.x.to_f64().unwrap(), a1.x.to_f64().unwrap());
+    let e_y = SOE::from_sub(b1.y.to_f64().unwrap(), a1.y.to_f64().unwrap());
+    let denom_soe = cross_product_soe(va_x, va_y, vb_x, vb_y);
+
+    println!("va: {} {}", va_x, va_y);
+    println!("vb: {} {}", vb_x, vb_y);
+    println!("denom_soe: {}", denom_soe);
+
+
+    if denom.abs() > F::zero() {
+        let s = cross_product(e, vb) / denom;
+        let s_cp = cross_product_soe(e_x, e_y, vb_x, vb_y);
+        let s_soe = s_cp / denom_soe;
+        //let s = -(a1.x * (b2.y - b1.y) + b1.x * (a1.y - b2.y) + b2.x * (b1.y - a1.y)) / denom;
+        //println!("{} {}", s1, s);
+        //assert_eq!(s1, s);
+        if s < F::zero() || s > F::one() {
+            return LineIntersection::None;
+        }
+        let t = cross_product(e, va) / denom;
+        let t_cp = cross_product_soe(e_x, e_y, va_x, va_y);
+        let t_soe = t_cp / denom_soe;
+        if t < F::zero() || t > F::one() {
+            return LineIntersection::None;
+        }
+
+        println!("ab x vb:  {:?}    =>    s = {}", cross_product(e, vb), s);
+        println!("ab x va:  {:?}    =>    t = {}", cross_product(e, va), t);
+
+        println!("ab x vb:  {}    =>    s = {}", s_cp, s_soe);
+        println!("ab x va:  {}    =>    t = {}", t_cp, t_soe);
+
+        let p = Coordinate {
+            x: F::from((SOE::from_f64(a1.x.to_f64().unwrap()) + s_soe * va_x).to_f64()).unwrap(),
+            y: F::from((SOE::from_f64(a1.y.to_f64().unwrap()) + s_soe * va_y).to_f64()).unwrap(),
+        };
+        return LineIntersection::Point(p);
+        /*
+        if s == F::zero() || s == F::one() {
+            return LineIntersection::Point(mid_point(a1, s, va));
+        }
+        if t == F::zero() || t == F::one() {
+            return LineIntersection::Point(mid_point(b1, t, vb));
+        }
+        return LineIntersection::Point(p);
+        */
+    }
+
+    let sqr_len_a = dot_product(va, va);
+    let kross = cross_product(e, va);
+    let sqr_kross = kross * kross;
+
+    if sqr_kross > F::zero() {
+        return LineIntersection::None;
+    }
+
+    let sa = dot_product(va, e) / sqr_len_a;
+    let sb = sa + dot_product(va, vb) / sqr_len_a;
+    let smin = sa.min(sb);
+    let smax = sa.max(sb);
+
+    if smin <= F::one() && smax >= F::zero() {
+        if smin == F::one() {
+            return LineIntersection::Point(mid_point(a1, smin, va));
+        }
+        if smax == F::zero() {
+            return LineIntersection::Point(mid_point(a1, smax, va));
+        }
+
+        return LineIntersection::Overlap(
+            mid_point(a1, smin.max(F::zero()), va),
+            mid_point(a1, smax.min(F::one()), va),
+        );
+    }
+
+    LineIntersection::None
+}
+
+
 fn mid_point<F>(p: Coordinate<F>, s: F, d: Coordinate<F>) -> Coordinate<F>
 where
     F: Float,
@@ -369,12 +494,19 @@ where
     result
 }
 
+
 #[inline]
 fn cross_product<F>(a: Coordinate<F>, b: Coordinate<F>) -> F
 where
     F: Float,
 {
     a.x * b.y - a.y * b.x
+}
+
+#[inline]
+fn cross_product_soe(a_x: SOE, a_y: SOE, b_x: SOE, b_y: SOE) -> SOE
+{
+    a_x * b_y - a_y * b_x
 }
 
 #[inline]
