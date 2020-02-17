@@ -187,22 +187,90 @@ def plot_distributions(data):
     plt.show()
 
 
+def plot_correlations(df):
+    df["a1_x"] = df["a1"].apply(lambda x: x[0])
+    df["a1_y"] = df["a1"].apply(lambda x: x[1])
+    df["a2_x"] = df["a2"].apply(lambda x: x[0])
+    df["a2_y"] = df["a2"].apply(lambda x: x[1])
+    df["b1_x"] = df["b1"].apply(lambda x: x[0])
+    df["b1_y"] = df["b1"].apply(lambda x: x[1])
+    df["b2_x"] = df["b2"].apply(lambda x: x[0])
+    df["b2_y"] = df["b2"].apply(lambda x: x[1])
+    df["va_x"] = df["a2_x"] - df["a1_x"]
+    df["va_y"] = df["a2_y"] - df["a1_y"]
+    df["vb_x"] = df["b2_x"] - df["b1_x"]
+    df["vb_y"] = df["b2_y"] - df["b1_y"]
+    df["e_x"] = df["b1_x"] - df["a1_x"]
+    df["e_y"] = df["b1_y"] - df["a1_y"]
+    import IPython; IPython.embed()
+
+    df["len_va"] = np.sqrt(df["va_x"] ** 2 + df["va_y"] ** 2)
+    df["len_vb"] = np.sqrt(df["vb_x"] ** 2 + df["vb_y"] ** 2)
+    df["len_e"] = np.sqrt(df["e_x"] ** 2 + df["e_y"] ** 2)
+
+    df["diff_len_va_vb"] = np.abs(df["len_va"] - df["len_vb"])
+    df["ratio_len_va_vb"] = df["len_va"] / df["len_vb"]
+
+    df["angle_va_vb"] = np.arccos(
+        ((df["va_x"] * df["vb_x"]) + (df["va_y"] * df["vb_y"])) / (df["len_va"] * df["len_vb"])
+    )
+    df["angle_e_va"] = np.arccos(
+        ((df["e_x"] * df["va_x"]) + (df["e_y"] * df["va_y"])) / (df["len_e"] * df["len_va"])
+    )
+    df["angle_e_vb"] = np.arccos(
+        ((df["e_x"] * df["vb_x"]) + (df["e_y"] * df["vb_y"])) / (df["len_e"] * df["len_vb"])
+    )
+
+    df["va_x_vb_y"] = df["va_x"] * df["vb_y"]
+    df["va_y_vb_x"] = df["va_y"] * df["vb_x"]
+    df["diff_va_x_vb_y_va_y_vb_x"] = df["va_x_vb_y"] - df["va_y_vb_x"]
+    df["ratio_va_x_vb_y_va_y_vb_x"] = (
+        np.abs(df["diff_va_x_vb_y_va_y_vb_x"]) / np.max([np.abs(df["va_x_vb_y"]), np.abs(df["va_y_vb_x"])], axis=0)
+    )
+
+    df["e_x_vb_y"] = df["e_x"] * df["vb_y"]
+    df["e_y_vb_x"] = df["e_y"] * df["vb_x"]
+    df["diff_e_x_vb_y_e_y_vb_x"] = df["e_x_vb_y"] - df["e_y_vb_x"]
+    df["ratio_e_x_vb_y_e_y_vb_x"] = (
+        np.abs(df["diff_e_x_vb_y_e_y_vb_x"]) / np.max([np.abs(df["e_x_vb_y"]), np.abs(df["e_y_vb_x"])], axis=0)
+    )
+
+    df["e_x_va_y"] = df["e_x"] * df["va_y"]
+    df["e_y_va_x"] = df["e_y"] * df["va_x"]
+    df["diff_e_x_va_y_e_y_va_x"] = df["e_x_va_y"] - df["e_y_va_x"]
+    df["ratio_e_x_va_y_e_y_va_x"] = (
+        np.abs(df["diff_e_x_va_y_e_y_va_x"]) / np.max([np.abs(df["e_x_va_y"]), np.abs(df["e_y_va_x"])], axis=0)
+    )
+
+    df["all_ratios"] = df["ratio_va_x_vb_y_va_y_vb_x"] * df["ratio_e_x_vb_y_e_y_vb_x"] * df["ratio_e_x_va_y_e_y_va_x"]
+
+    fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+    #ax.scatter(df["angle_va_vb"], df["angle_e_vb"], c=df["delta_fast1"])
+    ax.scatter(df["ratio_va_x_vb_y_va_y_vb_x"], df["ratio_e_x_vb_y_e_y_vb_x"], c=df["delta_fast1"])
+    plt.show()
+
+
+def add_delta_col(df, name):
+    df["delta_{}".format(name)] = (
+        df["i_{}".format(name)].apply(lambda row: np.array(row["p"])) -
+        df["i_exact"].apply(lambda row: np.array(row["p"]))
+    ).apply(lambda row: np.sqrt((row ** 2).mean()))
+
+
 def main():
     args = parse_args()
     filename = args.file
 
     data = json.load(open(filename))
     df = pd.DataFrame(data)
+    add_delta_col(df, "soe")
+    add_delta_col(df, "fast1")
 
+    plot_correlations(df)
     plot_distributions(data)
 
     # sort df by delta
-    df["delta"] = (
-        df["i_soe"].apply(lambda row: np.array(row["p"])) -
-        df["i_exact"].apply(lambda row: np.array(row["p"]))
-    ).apply(lambda row: np.sqrt((row ** 2).mean()))
-    df = df.sort_values("delta", ascending=False).reset_index(drop=True)
-
+    df = df.sort_values("delta_fast1", ascending=False).reset_index(drop=True)
     for _, row in df.iterrows():
         plot_intersection(row)
 
