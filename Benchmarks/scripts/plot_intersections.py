@@ -12,6 +12,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 
+from sklearn import tree
+from sklearn.linear_model import LinearRegression
+
 import argparse
 import json
 import math
@@ -187,7 +190,37 @@ def plot_distributions(data):
     plt.show()
 
 
+def two_diff_err(a, b):
+    x = a - b
+    b_virt = a - x
+    a_virt = x + b_virt
+    b_roundoff = b_virt - b
+    a_roundoff = a_virt - a
+    y = a_roundoff + b_roundoff
+    return y
+
+
+def estimate_cross_product_error(df, ax_name, ay_name, bx_name, by_name):
+    ax = df[ax_name]
+    ay = df[ay_name]
+    bx = df[bx_name]
+    by = df[by_name]
+    ax_err = np.abs(df["{}_err".format(ax_name)])
+    ay_err = np.abs(df["{}_err".format(ay_name)])
+    bx_err = np.abs(df["{}_err".format(bx_name)])
+    by_err = np.abs(df["{}_err".format(by_name)])
+    err = (
+            ax_err * np.abs(by) +
+            np.abs(ax) * by_err +
+            ay_err * np.abs(bx) +
+            np.abs(ay) * bx_err
+    )
+    val = ax * by - ay * bx
+    return err / np.abs(val)
+
+
 def plot_correlations(df):
+
     df["a1_x"] = df["a1"].apply(lambda x: x[0])
     df["a1_y"] = df["a1"].apply(lambda x: x[1])
     df["a2_x"] = df["a2"].apply(lambda x: x[0])
@@ -196,13 +229,41 @@ def plot_correlations(df):
     df["b1_y"] = df["b1"].apply(lambda x: x[1])
     df["b2_x"] = df["b2"].apply(lambda x: x[0])
     df["b2_y"] = df["b2"].apply(lambda x: x[1])
+
+    non_train_columns = set(df.columns)
+
     df["va_x"] = df["a2_x"] - df["a1_x"]
     df["va_y"] = df["a2_y"] - df["a1_y"]
     df["vb_x"] = df["b2_x"] - df["b1_x"]
     df["vb_y"] = df["b2_y"] - df["b1_y"]
     df["e_x"] = df["b1_x"] - df["a1_x"]
     df["e_y"] = df["b1_y"] - df["a1_y"]
-    import IPython; IPython.embed()
+
+    df["va_x_err"] = two_diff_err(df["a2_x"], df["a1_x"])
+    df["va_y_err"] = two_diff_err(df["a2_y"], df["a1_y"])
+    df["vb_x_err"] = two_diff_err(df["b2_x"], df["b1_x"])
+    df["vb_y_err"] = two_diff_err(df["b2_y"], df["b1_y"])
+    df["e_x_err"] = two_diff_err(df["b1_x"], df["a1_x"])
+    df["e_y_err"] = two_diff_err(df["b1_y"], df["a1_y"])
+    df["va_x_err_rel"] = df["va_x_err"] / df["va_x"]
+    df["va_y_err_rel"] = df["va_y_err"] / df["va_y"]
+    df["vb_x_err_rel"] = df["vb_x_err"] / df["vb_x"]
+    df["vb_y_err_rel"] = df["vb_y_err"] / df["vb_y"]
+    df["e_x_err_rel"] = df["e_x_err"] / df["e_x"]
+    df["e_y_err_rel"] = df["e_y_err"] / df["e_y"]
+
+    for c in df:
+        if c.endswith("_err_rel"):
+            df[c + "_abs"] = np.abs(df[c])
+
+    df["err_va_vb"] = estimate_cross_product_error(df, "va_x", "va_y", "vb_x", "vb_y")
+    df["err_e_va"] = estimate_cross_product_error(df, "e_x", "e_y", "va_x", "va_y")
+    df["err_e_vb"] = estimate_cross_product_error(df, "e_x", "e_y", "vb_x", "vb_y")
+
+    df["va_ratio"] = df["va_x"] / df["va_y"]
+    df["vb_ratio"] = df["vb_x"] / df["vb_y"]
+    df["e_ratio"] = df["e_x"] / df["e_y"]
+    df["va_vb_ratio"] = df["va_ratio"] / df["vb_ratio"]
 
     df["len_va"] = np.sqrt(df["va_x"] ** 2 + df["va_y"] ** 2)
     df["len_vb"] = np.sqrt(df["vb_x"] ** 2 + df["vb_y"] ** 2)
@@ -211,15 +272,15 @@ def plot_correlations(df):
     df["diff_len_va_vb"] = np.abs(df["len_va"] - df["len_vb"])
     df["ratio_len_va_vb"] = df["len_va"] / df["len_vb"]
 
-    df["angle_va_vb"] = np.arccos(
+    df["angle_va_vb"] = (np.arccos(
         ((df["va_x"] * df["vb_x"]) + (df["va_y"] * df["vb_y"])) / (df["len_va"] * df["len_vb"])
-    )
-    df["angle_e_va"] = np.arccos(
+    ) + np.pi) % (2 * np.pi) - np.pi
+    df["angle_e_va"] = (np.arccos(
         ((df["e_x"] * df["va_x"]) + (df["e_y"] * df["va_y"])) / (df["len_e"] * df["len_va"])
-    )
-    df["angle_e_vb"] = np.arccos(
+    ) + np.pi) % (2 * np.pi) - np.pi
+    df["angle_e_vb"] = (np.arccos(
         ((df["e_x"] * df["vb_x"]) + (df["e_y"] * df["vb_y"])) / (df["len_e"] * df["len_vb"])
-    )
+    ) + np.pi) % (2 * np.pi) - np.pi
 
     df["va_x_vb_y"] = df["va_x"] * df["vb_y"]
     df["va_y_vb_x"] = df["va_y"] * df["vb_x"]
@@ -244,10 +305,60 @@ def plot_correlations(df):
 
     df["all_ratios"] = df["ratio_va_x_vb_y_va_y_vb_x"] * df["ratio_e_x_vb_y_e_y_vb_x"] * df["ratio_e_x_va_y_e_y_va_x"]
 
+    #feature_names = [c for c in df.columns if c not in non_train_columns]
+    feature_names = [c for c in df.columns if c not in non_train_columns and "err" in c]
+    X = np.transpose([df[feature].values for feature in feature_names])
+
+    Y = np.zeros(len(df))
+    Y[df["delta_fast1"] > 0] = 1
+    Y[df["delta_fast1"] > 1e-14] = 2
+    Y[df["delta_fast1"] > 1e-13] = 3
+    Y[df["delta_fast1"] > 1e-12] = 4
+    Y[df["delta_fast1"] > 1e-11] = 5
+    Y[df["delta_fast1"] > 1e-10] = 6
+
+    def fit_lin_reg_features(features):
+        feature_indices = [feature_names.index(feature) for feature in features]
+        X_tmp = X[:, feature_indices]
+        reg = LinearRegression().fit(X_tmp, Y)
+        score = reg.score(X_tmp, Y)
+        return score
+
+    results = []
+    for i in range(len(feature_names) - 1):
+        for j in range(i + 1, len(feature_names)):
+            features = [feature_names[i], feature_names[j]]
+            score = fit_lin_reg_features(features)
+            results.append((score, features))
+
+    for score, features in list(reversed(sorted(results)))[:20]:
+        print("{} {}".format(score, features))
+
+        fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+        p = ax.scatter(df[features[0]], df[features[1]], c=Y)   # c=np.log(df["delta_fast1"]
+        plt.colorbar(p)
+        ax.set_xlabel(features[0])
+        ax.set_ylabel(features[1])
+        plt.show()
+
+    import IPython; IPython.embed()
     fig, ax = plt.subplots(1, 1, figsize=(16, 8))
-    #ax.scatter(df["angle_va_vb"], df["angle_e_vb"], c=df["delta_fast1"])
-    ax.scatter(df["ratio_va_x_vb_y_va_y_vb_x"], df["ratio_e_x_vb_y_e_y_vb_x"], c=df["delta_fast1"])
+    p = ax.scatter(df["angle_va_vb"], df["va_y"], c=Y)   # c=np.log(df["delta_fast1"]
+    plt.colorbar(p)
     plt.show()
+
+    # Y = df["delta_fast1"] / df["delta_fast1"].max()
+    Y = df["delta_fast1"] > 1e-12
+    #clf = tree.DecisionTreeRegressor(max_depth=3, min_samples_leaf=3)
+    clf = tree.DecisionTreeClassifier(max_depth=3, min_samples_leaf=3)
+    clf = clf.fit(X, Y)
+    #tree.plot_tree(clf)
+    tree.export_graphviz(
+        clf, "tree.dot",
+        feature_names=feature_names, filled=True, rounded=True, special_characters=True,
+    )
+
+    import IPython; IPython.embed()
 
 
 def add_delta_col(df, name):
