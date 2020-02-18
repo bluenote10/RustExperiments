@@ -219,6 +219,91 @@ def estimate_cross_product_error(df, ax_name, ay_name, bx_name, by_name):
     return err / np.abs(val)
 
 
+def estimate_uncertainty(df):
+    a1_x = df["a1_x"]
+    a1_y = df["a1_y"]
+    a2_x = df["a2_x"]
+    a2_y = df["a2_y"]
+    b1_x = df["b1_x"]
+    b1_y = df["b1_y"]
+    b2_x = df["b2_x"]
+    b2_y = df["b2_y"]
+
+    va_x = Interval.from_sub(a2_x, a1_x)
+    va_y = Interval.from_sub(a2_y, a1_y)
+    vb_x = Interval.from_sub(b2_x, b1_x)
+    vb_y = Interval.from_sub(b2_y, b1_y)
+    e_y = Interval.from_sub(b1_y, a1_y)
+    e_x = Interval.from_sub(b1_x, a1_x)
+
+    cross_va_vb = va_x * vb_y - va_y * vb_x
+    cross_e_vb = e_x * vb_y - e_y * vb_x
+
+    s = cross_e_vb / cross_va_vb
+
+    result_x = Interval.from_float(a1_x) + s * va_x
+    result_y = Interval.from_float(a1_y) + s * va_y
+
+    err = result_x.err + result_y.err
+    df["uncertainty"] = err
+
+
+class Interval(object):
+    def __init__(self, lo, hi):
+        assert (lo <= hi).all()
+        self.lo = lo
+        self.hi = hi
+
+    @property
+    def mid(self):
+        return (self.hi + self.lo) / 2.0
+
+    @property
+    def err(self):
+        return self.hi - self.lo
+
+    def __add__(self, that):
+        return self.operation(self, that, np.add)
+
+    def __sub__(self, that):
+        return self.operation(self, that, np.subtract)
+
+    def __mul__(self, that):
+        return self.operation(self, that, np.multiply)
+
+    def __div__(self, that):
+        return self.operation(self, that, np.divide)
+
+    def __repr__(self):
+        return "Interval({}, {})".format(self.lo, self.hi)
+
+    @staticmethod
+    def operation(a, b, op):
+        c1 = op(a.lo, b.lo)
+        c2 = op(a.lo, b.hi)
+        c3 = op(a.hi, b.lo)
+        c4 = op(a.hi, b.hi)
+        hi = np.max([c1, c2, c3, c4], axis=0)
+        lo = np.min([c1, c2, c3, c4], axis=0)
+        hi = np.nextafter(hi, +np.inf)
+        lo = np.nextafter(lo, -np.inf)
+        return Interval(lo, hi)
+
+    @staticmethod
+    def from_float(x):
+        return Interval(x, x)
+
+    @staticmethod
+    def from_sub(a, b):
+        x = a - b
+        y = two_diff_err(a, b)
+        lo = x.copy()
+        hi = x.copy()
+        lo[y < 0] = np.nextafter(x, -np.inf)
+        hi[y > 0] = np.nextafter(x, +np.inf)
+        return Interval(lo, hi)
+
+
 def plot_correlations(df):
 
     df["a1_x"] = df["a1"].apply(lambda x: x[0])
@@ -259,6 +344,8 @@ def plot_correlations(df):
     df["err_va_vb"] = estimate_cross_product_error(df, "va_x", "va_y", "vb_x", "vb_y")
     df["err_e_va"] = estimate_cross_product_error(df, "e_x", "e_y", "va_x", "va_y")
     df["err_e_vb"] = estimate_cross_product_error(df, "e_x", "e_y", "vb_x", "vb_y")
+
+    estimate_uncertainty(df)
 
     df["va_ratio"] = df["va_x"] / df["va_y"]
     df["vb_ratio"] = df["vb_x"] / df["vb_y"]
@@ -305,8 +392,8 @@ def plot_correlations(df):
 
     df["all_ratios"] = df["ratio_va_x_vb_y_va_y_vb_x"] * df["ratio_e_x_vb_y_e_y_vb_x"] * df["ratio_e_x_va_y_e_y_va_x"]
 
-    #feature_names = [c for c in df.columns if c not in non_train_columns]
-    feature_names = [c for c in df.columns if c not in non_train_columns and "err" in c]
+    feature_names = [c for c in df.columns if c not in non_train_columns]
+    #feature_names = [c for c in df.columns if c not in non_train_columns and "err" in c]
     X = np.transpose([df[feature].values for feature in feature_names])
 
     Y = np.zeros(len(df))
