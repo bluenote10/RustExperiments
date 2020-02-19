@@ -4,3 +4,6 @@ Cargo.lock
 .idea/
 sa_data.json
 intersection_data.json
+
+tree.dot
+tree.png
