@@ -169,6 +169,13 @@ def plot_distributions(data):
             ax_dists[0].plot(np.arange(len(deltas_err)), deltas_err, "-", label=name)
             ax_dists[1].plot(np.arange(len(deltas_err)), ulp_deltas_err, "-", label=name)
 
+            ax_all[0].legend(loc="best")
+            ax_all[1].legend(loc="best")
+            ax_dists[0].legend(loc="best")
+            ax_dists[1].legend(loc="best")
+            ax_all[0].set_title("Delta (values) to exact solution")
+            ax_all[1].set_title("Delta (ULPs) to exact solution")
+
         print(name)
         print("Deltas:     {}    {}    {}".format(
             deltas["x"].abs().mean(),
@@ -464,7 +471,8 @@ def main():
     add_delta_col(df, "soe")
     add_delta_col(df, "fast1")
 
-    plot_correlations(df)
+    # plot_correlations(df)
+
     plot_distributions(data)
 
     # sort df by delta
