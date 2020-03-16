@@ -162,6 +162,25 @@ pub fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(u
 mod test {
     use super::*;
     use std::cmp::Ordering;
+    use rand::{Rng, SeedableRng};
+    use rand::rngs::StdRng;
+
+    pub fn binary_search_by_reference<T, F>(data: &[Option<T>], mut f: F) -> (usize, bool) // BinarySearchResult
+    where
+        F: FnMut(&T) -> Ordering,
+    {
+        for i in 0 .. data.len() {
+            if let Some(x) = &data[i] {
+                let cmp = f(x);
+                match cmp {
+                    Ordering::Equal => return (i, true),
+                    Ordering::Greater => return (i, false),
+                    _ => {}
+                }
+            }
+        }
+        (data.len(), false)
+    }
 
     fn int_comparator(a: &i32, b: &i32) -> Ordering {
         a.cmp(b)
@@ -176,6 +195,71 @@ mod test {
         assert_eq!(binary_search_by(&data, |x| int_comparator(x, &3)), (2, true));
         assert_eq!(binary_search_by(&data, |x| int_comparator(x, &4)), (3, false));
     }
+
+    fn generate_random_array(rng: &mut StdRng, len: usize) -> (Vec<Option<i32>>, Vec<i32>) {
+        let mut data = Vec::new();
+        let mut values = Vec::new();
+
+        let mut last = 0;
+        for _ in 0 .. len {
+            data.push(Some(last));
+            values.push(last);
+            if rng.gen::<bool>() {
+                last += 1;
+            }
+        }
+
+        if len > 0 {
+            let min = values.iter().min().unwrap() - 1;
+            let max = values.iter().max().unwrap() + 1;
+            values.extend(&[min, max]);
+        }
+        (data, values)
+    }
+
+    fn insert_random_slots(rng: &mut StdRng, data: &[Option<i32>], slot_prob: f64) -> Vec<Option<i32>> {
+        let mut data_with_slots = Vec::new();
+        let mut i = 0;
+        while i < data.len() {
+            if rng.gen_range(0.0, 1.0) < slot_prob {
+                data_with_slots.push(None);
+            } else {
+                data_with_slots.push(data[i]);
+                i += 1;
+            }
+        }
+        data_with_slots
+    }
+
+    fn test_against_reference(data: &[Option<i32>], value: i32) {
+        let result_actual = binary_search_by(&data, |x| x.cmp(&value));
+        let result_expect = binary_search_by_reference(&data, |x| x.cmp(&value));
+
+        println!("{:?} {}", data, value);
+        assert_eq!(result_actual, result_expect);
+    }
+
+    #[test]
+    fn test_binary_search_by_random() {
+        let mut rng: StdRng = SeedableRng::seed_from_u64(0);
+        for array_len in 0 .. 16 {
+            let (data, values) = generate_random_array(&mut rng, array_len);
+
+            for value in values {
+                // test with no slots
+                test_against_reference(&data, value);
+
+                // test with few slots
+                let data_with_slots = insert_random_slots(&mut rng, &data, 0.1);
+                test_against_reference(&data_with_slots, value);
+
+                // test with many slots
+                let data_with_slots = insert_random_slots(&mut rng, &data, 0.9);
+                test_against_reference(&data_with_slots, value);
+            }
+        }
+    }
+
 
 }
 
