@@ -16,7 +16,7 @@ where
 impl<T, C> SortedArray<T, C>
 where
     C: Fn(&T, &T) -> Ordering,
-    T: Clone,
+    T: Clone + std::fmt::Debug,
 {
     pub fn new(comparator: C, initial_capacity: usize, spacing: usize) -> SortedArray<T, C> {
         SortedArray {
@@ -59,6 +59,7 @@ pub enum BinarySearchResult {
 pub fn binary_search_by<T, F>(data: &[Option<T>], mut f: F) -> (usize, bool) // BinarySearchResult
 where
     F: FnMut(&T) -> Ordering,
+    T: std::fmt::Debug,
 {
     if data.len() == 0 {
         //return BinarySearchResult::Err;
@@ -68,76 +69,50 @@ where
     let mut r: usize = data.len();
     let mut equals = false;
 
-    'outer: while r > l {
+    while r > l {
         let mut mid = l + (r - l) / 2;
 
-        /*
-        while let Some(el) = data[mid] {
-            mid += 1;
-            if mid == r {
-                break 'outer;
-            }
-        }
+        let mid_el = next(&data, mid, r - 1).or_else(|| prev(&data, mid, l));
+        println!("{} {} {} {:?}", l, r, mid, mid_el);
 
-        let cmp = f(&data[mid]);
-        //let cmp = f(unsafe { self.data_raw.get_unchecked(mid) });
-        base = if cmp == Greater { base } else { mid };
-        size -= half;
-        */
-
-        loop {
-            if let Some(el) = &data[mid] {
-                let cmp = f(&el);
-                match cmp {
-                    Ordering::Greater => {
-                        r = mid;
-                    }
-                    Ordering::Equal => {
-                        r = mid;
-                        equals = true;
-                    }
-                    Ordering::Less => {
-                        l = mid + 1;
-                    }
+        if let Some((mid, el)) = mid_el {
+            let cmp = f(el);
+            match cmp {
+                Ordering::Greater => {
+                    r = mid;
                 }
-                break;
-            } else {
-                mid += 1;
-                if mid == r {
-                    break 'outer;
+                Ordering::Equal => {
+                    r = mid;
+                    equals = true;
+                }
+                Ordering::Less => {
+                    l = mid + 1;
                 }
             }
-        }
-    }
-
-    /*
-    if equals {
-        BinarySearchResult::Match{idx: r}
-    } else {
-        if r == data.len() {
-            // TODO: check for slot
-            BinarySearchResult::Err
         } else {
-            unimplemented!()
+            break;
         }
-
     }
-    */
+
     (r, equals)
 }
 
 #[inline]
 pub fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
     let mut i = idx;
+    println!("next {} {}", idx, bound);
+    //if idx > bound {
+    //    return None;
+    //}
+    debug_assert!(idx <= bound);
     loop {
-        if i <= bound {
-            if let Some(el) = &data[i] {
-                return Some((i, el));
-            } else {
-                i += 1;
-            }
+        if let Some(el) = &data[i] {
+            return Some((i, el));
+        }
+        if i == bound {
+            return None;
         } else {
-            return None
+            i += 1;
         }
     }
 }
@@ -145,15 +120,19 @@ pub fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(u
 #[inline]
 pub fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
     let mut i = idx;
+    println!("prev {} {}", idx, bound);
+    //if idx < bound {
+    //    return None;
+    //}
+    debug_assert!(idx >= bound);
     loop {
-        if i >= bound {
-            if let Some(el) = &data[i] {
-                return Some((i, el));
-            } else {
-                i -= 1;
-            }
+        if let Some(el) = &data[i] {
+            return Some((i, el));
+        }
+        if i == bound {
+            return None;
         } else {
-            return None
+            i -= 1;
         }
     }
 }
@@ -232,10 +211,10 @@ mod test {
     }
 
     fn test_against_reference(data: &[Option<i32>], value: i32) {
+        println!("{:?} {}", data, value);
+
         let result_actual = binary_search_by(&data, |x| x.cmp(&value));
         let result_expect = binary_search_by_reference(&data, |x| x.cmp(&value));
-
-        println!("{:?} {}", data, value);
         assert_eq!(result_actual, result_expect);
     }
 
@@ -243,19 +222,23 @@ mod test {
     fn test_binary_search_by_random() {
         let mut rng: StdRng = SeedableRng::seed_from_u64(0);
         for array_len in 0 .. 16 {
-            let (data, values) = generate_random_array(&mut rng, array_len);
+            for _ in 0 .. 10 {
+                let (data, values) = generate_random_array(&mut rng, array_len);
 
-            for value in values {
-                // test with no slots
-                test_against_reference(&data, value);
+                let data_variations = vec![
+                    data.clone(),
+                    insert_random_slots(&mut rng, &data, 0.1),
+                    insert_random_slots(&mut rng, &data, 0.1),
+                    insert_random_slots(&mut rng, &data, 0.5),
+                    insert_random_slots(&mut rng, &data, 0.9),
+                    insert_random_slots(&mut rng, &data, 0.999),
+                ];
 
-                // test with few slots
-                let data_with_slots = insert_random_slots(&mut rng, &data, 0.1);
-                test_against_reference(&data_with_slots, value);
-
-                // test with many slots
-                let data_with_slots = insert_random_slots(&mut rng, &data, 0.9);
-                test_against_reference(&data_with_slots, value);
+                for data in &data_variations {
+                    for value in &values {
+                        test_against_reference(data, *value);
+                    }
+                }
             }
         }
     }
