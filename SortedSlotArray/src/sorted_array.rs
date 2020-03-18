@@ -43,7 +43,7 @@ where
                 Ordering::Less
             });
             */
-            binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
+            let (insert_idx, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
 
         }
     }
@@ -70,10 +70,11 @@ where
     let mut equals = false;
 
     while r > l {
-        let mut mid = l + (r - l) / 2;
+        let mid = l + (r - l) / 2;
 
+        // Search around `mid` for an element that is not None
         let mid_el = next(&data, mid, r - 1).or_else(|| prev(&data, mid, l));
-        println!("{} {} {} {:?}", l, r, mid, mid_el);
+        // println!("{} {} {} {:?}", l, r, mid, mid_el);
 
         if let Some((mid, el)) = mid_el {
             let cmp = f(el);
@@ -98,7 +99,7 @@ where
 }
 
 #[inline]
-pub fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
+fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
     let mut i = idx;
     println!("next {} {}", idx, bound);
     //if idx > bound {
@@ -118,7 +119,7 @@ pub fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(u
 }
 
 #[inline]
-pub fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
+fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
     let mut i = idx;
     println!("prev {} {}", idx, bound);
     //if idx < bound {
@@ -134,6 +135,34 @@ pub fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(u
         } else {
             i -= 1;
         }
+    }
+}
+
+fn determine_insert_slot<'a, T>(data: &'a [Option<T>], insert_index: usize) -> Option<usize> {
+    let idx_start = insert_index as i64 - 1;
+    let mut idx_low: i64 = idx_start;
+    let mut idx_mid: i64 = idx_low;
+
+    loop {
+        if idx_low >= 0 && data[idx_low as usize].is_none() {
+            idx_low -= 1;
+            if idx_low % 2 == 0 {
+                idx_mid -= 1;
+            }
+            // println!("iteration {} {}", idx_low, idx_mid);
+        } else {
+            break;
+        }
+    }
+
+    // println!("{} {}", idx_low, data[idx_low as usize].is_some());
+    // println!("{} {}", idx_low, idx_mid);
+    debug_assert!(idx_low == -1 || data[idx_low as usize].is_some());
+
+    if idx_low == idx_start {
+        None
+    } else {
+        Some(idx_mid as usize)
     }
 }
 
@@ -243,7 +272,27 @@ mod test {
         }
     }
 
-
+    #[test]
+    fn test_determine_insert_slot() {
+        assert_eq!(
+            determine_insert_slot(&[Some(0)], 0), None
+        );
+        assert_eq!(
+            determine_insert_slot(&[None, Some(0)], 1), Some(0)
+        );
+        assert_eq!(
+            determine_insert_slot(&[None, None, Some(0)], 2), Some(0)
+        );
+        assert_eq!(
+            determine_insert_slot(&[None, None, None, Some(0)], 3), Some(1)
+        );
+        assert_eq!(
+            determine_insert_slot(&[None, None, None, None, Some(0)], 4), Some(1)
+        );
+        assert_eq!(
+            determine_insert_slot(&[None, None, None, None, None, Some(0)], 5), Some(2)
+        );
+    }
 }
 
 /*

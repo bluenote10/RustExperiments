@@ -1,1 +1,2 @@
-mod sorted_array;
+pub mod sorted_array;
+

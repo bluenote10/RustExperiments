@@ -1,5 +1,5 @@
 [package]
-name = "SortedSlotArray"
+name = "sorted_slot_array"
 version = "0.1.0"
 authors = ["Fabian Keller <github.100.fkeller@spamgourmet.com>"]
 edition = "2018"
