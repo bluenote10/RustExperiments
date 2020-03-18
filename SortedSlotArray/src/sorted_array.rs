@@ -45,6 +45,8 @@ where
             */
             let (insert_idx, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
 
+            let insert_slot = determine_insert_slot(&self.data_raw, insert_idx);
+
         }
     }
 
@@ -146,10 +148,12 @@ fn determine_insert_slot<'a, T>(data: &'a [Option<T>], insert_index: usize) -> O
     loop {
         if idx_low >= 0 && data[idx_low as usize].is_none() {
             idx_low -= 1;
-            if idx_low % 2 == 0 {
-                idx_mid -= 1;
-            }
-            // println!("iteration {} {}", idx_low, idx_mid);
+        } else {
+            break;
+        }
+        if idx_low >= 0 && data[idx_low as usize].is_none() {
+            idx_low -= 1;
+            idx_mid -= 1;
         } else {
             break;
         }
@@ -274,9 +278,23 @@ mod test {
 
     #[test]
     fn test_determine_insert_slot() {
+        // cases without free slot
         assert_eq!(
             determine_insert_slot(&[Some(0)], 0), None
         );
+        assert_eq!(
+            determine_insert_slot(&[Some(0)], 1), None
+        );
+        assert_eq!(
+            determine_insert_slot(&[Some(0), Some(1)], 0), None
+        );
+        assert_eq!(
+            determine_insert_slot(&[Some(0), Some(1)], 1), None
+        );
+        assert_eq!(
+            determine_insert_slot(&[Some(0), Some(1)], 2), None
+        );
+
         assert_eq!(
             determine_insert_slot(&[None, Some(0)], 1), Some(0)
         );
@@ -292,6 +310,32 @@ mod test {
         assert_eq!(
             determine_insert_slot(&[None, None, None, None, None, Some(0)], 5), Some(2)
         );
+
+        assert_eq!(
+            determine_insert_slot(&[Some(0), None, Some(1)], 2), Some(1)
+        );
+        assert_eq!(
+            determine_insert_slot(&[Some(0), None, None, Some(1)], 3), Some(1)
+        );
+        assert_eq!(
+            determine_insert_slot(&[Some(0), None, None, None, Some(1)], 4), Some(2)
+        );
+
+        assert_eq!(
+            determine_insert_slot(&[Some(0), None], 2), Some(1)
+        );
+        assert_eq!(
+            determine_insert_slot(&[Some(0), None, None], 3), Some(1)
+        );
+        assert_eq!(
+            determine_insert_slot(&[Some(0), None, None, None], 4), Some(2)
+        );
+
+        let all_none: &[Option<i32>] = &[None, None, None];
+        assert_eq!(determine_insert_slot(all_none, 0), None);
+        assert_eq!(determine_insert_slot(all_none, 1), Some(0));
+        assert_eq!(determine_insert_slot(all_none, 2), Some(0));
+        assert_eq!(determine_insert_slot(all_none, 3), Some(1));
     }
 }
 
