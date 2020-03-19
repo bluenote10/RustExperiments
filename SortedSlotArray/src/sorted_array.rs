@@ -9,8 +9,7 @@ where
     spacing: usize,
     comparator: C,
     data_raw: Vec<Option<T>>,
-    //data_idx: Vec<usize>,
-    data_idx: HashMap<usize, usize>
+    num_elements: usize,
 }
 
 impl<T, C> SortedArray<T, C>
@@ -23,31 +22,26 @@ where
             spacing,
             comparator,
             data_raw: iter::repeat(None).take(initial_capacity * spacing).collect(),
-            data_idx: HashMap::new(),
+            num_elements: 0,
         }
     }
 
     pub fn insert(&mut self, t: T) {
-        if self.data_idx.len() == 0 {
-            if self.data_raw.len() == 0 {
-                self.data_raw = iter::repeat(None).take(self.spacing).collect();
-            }
-            // put in middle
-            let idx = self.data_raw.len() / 2;
+        /*
+        self.data_idx.binary_search_by(|x| {
+            Ordering::Less
+        });
+        */
+        let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
+
+        let insert_slot = determine_insert_slot(&self.data_raw, index_larger_or_equal);
+
+        if let Some(idx) = insert_slot {
             self.data_raw[idx] = Some(t);
-            self.data_idx.insert(0, idx);
         } else {
-
-            /*
-            self.data_idx.binary_search_by(|x| {
-                Ordering::Less
-            });
-            */
-            let (insert_idx, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
-
-            let insert_slot = determine_insert_slot(&self.data_raw, insert_idx);
-
+            self.data_raw = redistribute(&self.data_raw, self.num_elements, self.spacing, index_larger_or_equal, t);
         }
+        self.num_elements += 1;
     }
 
 }
@@ -168,6 +162,61 @@ fn determine_insert_slot<'a, T>(data: &'a [Option<T>], insert_index: usize) -> O
     } else {
         Some(idx_mid as usize)
     }
+}
+
+fn redistribute<'a, T>(data: &'a [Option<T>], num_elements: usize, spacing: usize, insert_index: usize, t: T) -> Vec<Option<T>>
+where
+    T: Clone
+{
+    if num_elements == 0 {
+        return iter::repeat(None).take(spacing * 2 + 1).collect();
+    }
+    let first = next(data, 0, data.len());
+    if first.is_none() {
+        return iter::repeat(None).take(spacing * 2 + 1).collect();
+    }
+
+    let new_num_elements = num_elements + 1;
+    let new_size = (new_num_elements + 1) * spacing + new_num_elements;
+    let mut new_data: Vec<Option<T>> = iter::repeat(None).take(new_size).collect();
+
+    let mut idx_i = first.unwrap().0;
+    let mut idx_o = spacing;
+
+    while idx_i < insert_index {
+        new_data[idx_o] = data[idx_i].clone();
+
+        if idx_i + 1 < data.len() {
+            let nxt = next(data, idx_i + 1, data.len());
+            if let Some((idx_next, _)) = nxt {
+                idx_i = idx_next;
+                idx_o += spacing + 1;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    new_data[idx_o] = Some(t);
+    idx_o += spacing + 1;
+    while idx_i < data.len() {
+        new_data[idx_o] = data[idx_i].clone();
+
+        if idx_i + 1 < data.len() {
+            let nxt = next(data, idx_i + 1, data.len());
+            if let Some((idx_next, _)) = nxt {
+                idx_i = idx_next;
+                idx_o += spacing + 1;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    new_data
 }
 
 #[cfg(test)]
@@ -336,6 +385,22 @@ mod test {
         assert_eq!(determine_insert_slot(all_none, 1), Some(0));
         assert_eq!(determine_insert_slot(all_none, 2), Some(0));
         assert_eq!(determine_insert_slot(all_none, 3), Some(1));
+    }
+
+    #[test]
+    fn test_redistribute() {
+        assert_eq!(
+            redistribute(&[Some(20), Some(30)], 2, 2, 0, 10),
+            vec![None, None, Some(10), None, None, Some(20), None, None, Some(30), None, None]
+        );
+        assert_eq!(
+            redistribute(&[Some(20), Some(30)], 2, 2, 1, 25),
+            vec![None, None, Some(20), None, None, Some(25), None, None, Some(30), None, None]
+        );
+        assert_eq!(
+            redistribute(&[Some(20), Some(30)], 2, 2, 2, 40),
+            vec![None, None, Some(20), None, None, Some(30), None, None, Some(40), None, None]
+        );
     }
 }
 
