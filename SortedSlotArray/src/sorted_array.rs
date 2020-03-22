@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use std::iter;
 
 pub struct SortedArray<T, C>
@@ -21,27 +20,47 @@ where
         SortedArray {
             spacing,
             comparator,
-            data_raw: iter::repeat(None).take(initial_capacity * spacing).collect(),
+            data_raw: iter::repeat(None).take(initial_capacity * (spacing + 1)).collect(),
             num_elements: 0,
         }
     }
 
-    pub fn insert(&mut self, t: T) {
-        /*
-        self.data_idx.binary_search_by(|x| {
-            Ordering::Less
-        });
-        */
+    pub fn insert(&mut self, t: T) -> bool {
         let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
 
-        let insert_slot = determine_insert_slot(&self.data_raw, index_larger_or_equal);
+        if !equals {
+            let insert_slot = determine_insert_slot(&self.data_raw, index_larger_or_equal);
 
-        if let Some(idx) = insert_slot {
-            self.data_raw[idx] = Some(t);
+            if let Some(idx) = insert_slot {
+                self.data_raw[idx] = Some(t);
+            } else {
+                self.data_raw = redistribute(&self.data_raw, self.num_elements, self.spacing, index_larger_or_equal, t);
+            }
+            self.num_elements += 1;
+
+            true
         } else {
-            self.data_raw = redistribute(&self.data_raw, self.num_elements, self.spacing, index_larger_or_equal, t);
+            false
         }
-        self.num_elements += 1;
+    }
+
+    pub fn remove(&mut self, t: T) -> bool {
+        let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
+        if equals {
+            self.data_raw[index_larger_or_equal] = None;
+            self.num_elements -= 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn collect(&self) -> Vec<T> {
+        collect(&self.data_raw)
+    }
+
+    pub fn debug(&self) {
+        println!("{:?}", self.data_raw);
     }
 
 }
@@ -97,7 +116,7 @@ where
 #[inline]
 fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
     let mut i = idx;
-    println!("next {} {}", idx, bound);
+    // println!("next {} {}", idx, bound);
     //if idx > bound {
     //    return None;
     //}
@@ -117,7 +136,7 @@ fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize
 #[inline]
 fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize, &'a T)> {
     let mut i = idx;
-    println!("prev {} {}", idx, bound);
+    // println!("prev {} {}", idx, bound);
     //if idx < bound {
     //    return None;
     //}
@@ -170,11 +189,9 @@ where
 {
     println!("\nredistribute:");
     if num_elements == 0 {
-        return iter::repeat(None).take(spacing * 2 + 1).collect();
-    }
-    let first = next(data, 0, data.len());
-    if first.is_none() {
-        return iter::repeat(None).take(spacing * 2 + 1).collect();
+        let mut new_data: Vec<Option<T>> = iter::repeat(None).take(spacing * 2 + 1).collect();
+        new_data[spacing] = Some(t);
+        return new_data;
     }
 
     let new_num_elements = num_elements + 1;
@@ -182,6 +199,11 @@ where
     let mut new_data: Vec<Option<T>> = iter::repeat(None).take(new_size).collect();
 
     /*
+    let first = next(data, 0, data.len());
+    if first.is_none() {
+        return iter::repeat(None).take(spacing * 2 + 1).collect();
+    }
+
     let mut idx_i = first.unwrap().0;
     let mut idx_o = spacing;
 
@@ -224,12 +246,12 @@ where
 
     traverse(data, |idx_i, x| {
         if !inserted && idx_i >= insert_index {
-            println!("insert new element at index {}", idx_o);
+            // println!("insert new element at index {}", idx_o);
             new_data[idx_o] = Some(t.clone());
             idx_o += spacing + 1;
             inserted = true;
         }
-        println!("insert at index {} from {}", idx_o, idx_i);
+        // println!("insert at index {} from {}", idx_o, idx_i);
         new_data[idx_o] = Some(x.clone());
         idx_o += spacing + 1;
     });
@@ -468,6 +490,17 @@ mod test {
             redistribute(&[Some(20), Some(30)], 2, 2, 2, 40),
             vec![None, None, Some(20), None, None, Some(30), None, None, Some(40), None, None]
         );
+
+        let v_empty: Vec<Option<i32>> = vec![];
+        assert_eq!(
+            redistribute(&v_empty, 0, 0, 0, 42),
+            vec![Some(42)]
+        );
+        assert_eq!(
+            redistribute(&v_empty, 0, 1, 0, 42),
+            vec![None, Some(42), None]
+        );
+
     }
 }
 
