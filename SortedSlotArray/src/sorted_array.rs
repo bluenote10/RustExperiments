@@ -187,7 +187,7 @@ fn redistribute<'a, T>(data: &'a [Option<T>], num_elements: usize, spacing: usiz
 where
     T: Clone
 {
-    println!("\nredistribute:");
+    // println!("\nredistribute:");
     if num_elements == 0 {
         let mut new_data: Vec<Option<T>> = iter::repeat(None).take(spacing * 2 + 1).collect();
         new_data[spacing] = Some(t);
