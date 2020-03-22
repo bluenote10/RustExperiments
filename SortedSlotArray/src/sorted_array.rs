@@ -168,6 +168,7 @@ fn redistribute<'a, T>(data: &'a [Option<T>], num_elements: usize, spacing: usiz
 where
     T: Clone
 {
+    println!("\nredistribute:");
     if num_elements == 0 {
         return iter::repeat(None).take(spacing * 2 + 1).collect();
     }
@@ -180,6 +181,7 @@ where
     let new_size = (new_num_elements + 1) * spacing + new_num_elements;
     let mut new_data: Vec<Option<T>> = iter::repeat(None).take(new_size).collect();
 
+    /*
     let mut idx_i = first.unwrap().0;
     let mut idx_o = spacing;
 
@@ -215,8 +217,49 @@ where
             break;
         }
     }
+    */
+
+    let mut idx_o = spacing;
+    let mut inserted = false;
+
+    traverse(data, |idx_i, x| {
+        if !inserted && idx_i >= insert_index {
+            println!("insert new element at index {}", idx_o);
+            new_data[idx_o] = Some(t.clone());
+            idx_o += spacing + 1;
+            inserted = true;
+        }
+        println!("insert at index {} from {}", idx_o, idx_i);
+        new_data[idx_o] = Some(x.clone());
+        idx_o += spacing + 1;
+    });
+
+    if !inserted {
+        new_data[idx_o] = Some(t.clone());
+    }
 
     new_data
+}
+
+fn traverse<T, F>(data: &[Option<T>], mut f: F)
+where
+    T: Clone,
+    F: FnMut(usize, &T),
+{
+    for i in 0 .. data.len() {
+        if let Some(x) = &data[i] {
+            f(i, x);
+        }
+    }
+}
+
+fn collect<T>(data: &[Option<T>]) -> Vec<T>
+where
+    T: Clone,
+{
+    let mut v = Vec::new();
+    traverse(data, |_, x: &T| v.push(x.clone()));
+    v
 }
 
 #[cfg(test)]
@@ -388,7 +431,31 @@ mod test {
     }
 
     #[test]
+    fn test_traverse() {
+        let v_empty1: Vec<Option<i32>> = vec![];
+        let v_empty2: Vec<Option<i32>> = vec![None];
+        assert_eq!(collect(&v_empty1), vec![]);
+        assert_eq!(collect(&v_empty2), vec![]);
+        assert_eq!(collect(&[Some(20), Some(30)]), vec![20, 30]);
+        assert_eq!(collect(&[None, Some(20), None, Some(30), None]), vec![20, 30]);
+    }
+
+    //#[ignore]
+    #[test]
     fn test_redistribute() {
+        assert_eq!(
+            redistribute(&[Some(20), Some(30)], 2, 0, 0, 10),
+            vec![Some(10), Some(20), Some(30)]
+        );
+        assert_eq!(
+            redistribute(&[Some(20), Some(30)], 2, 0, 1, 25),
+            vec![Some(20), Some(25), Some(30)]
+        );
+        assert_eq!(
+            redistribute(&[Some(20), Some(30)], 2, 0, 2, 40),
+            vec![Some(20), Some(30), Some(40)]
+        );
+
         assert_eq!(
             redistribute(&[Some(20), Some(30)], 2, 2, 0, 10),
             vec![None, None, Some(10), None, None, Some(20), None, None, Some(30), None, None]
