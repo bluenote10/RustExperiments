@@ -26,7 +26,7 @@ fn cmp_b(a: &f64, b: &f64) -> std::cmp::Ordering {
 
 fn gen_data() -> Vec<f64> {
     let mut rng = rand::thread_rng();
-    let vals: Vec<f64> = (0..100).map(|_| rng.gen()).collect();
+    let vals: Vec<f64> = (0..1000).map(|_| rng.gen()).collect();
     vals
 }
 
@@ -40,8 +40,9 @@ fn benchmarks(c: &mut Criterion) {
             for x in &data {
                 set.insert(*x);
             }
-            let out: Vec<_> = set.into_iter().collect();
-            out
+            //let out: Vec<_> = set.into_iter().collect();
+            //out
+            set.len()
 
         },
         BatchSize::SmallInput,
@@ -54,11 +55,48 @@ fn benchmarks(c: &mut Criterion) {
             for x in &data {
                 set.insert(*x);
             }
-            set.collect()
-
+            //set.collect()
+            set.len()
         },
         BatchSize::SmallInput,
     ));
+
+    c.bench_function("splay delete", |b| b.iter_batched(
+        || {
+            let data = gen_data();
+            let mut set = SplaySet::new(cmp_a);
+            for x in &data {
+                set.insert(*x);
+            }
+            (data, set)
+        },
+        |(data, mut set)| {
+            for x in &data {
+                set.remove(x);
+            }
+            set.len()
+        },
+        BatchSize::SmallInput,
+    ));
+
+    c.bench_function("sarray delete", |b| b.iter_batched(
+        || {
+            let data = gen_data();
+            let mut set = SortedArray::new(cmp_b, 10, 4);
+            for x in &data {
+                set.insert(*x);
+            }
+            (data, set)
+        },
+        |(data, mut set)| {
+            for x in &data {
+                set.remove(x);
+            }
+            set.len()
+        },
+        BatchSize::SmallInput,
+    ));
+
 }
 
 fn config() -> Criterion {

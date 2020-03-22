@@ -29,7 +29,8 @@ fn main() {
 
     let mut rng = rand::thread_rng();
 
-    let vals: Vec<f64> = (0..100).map(|_| rng.gen()).collect();
+    let n = 100;
+    let vals: Vec<f64> = (0..n).map(|_| rng.gen()).collect();
 
     let mut set_a = SplaySet::new(cmp_a);
     let mut set_b = SortedArray::new(cmp_b, 20, 4);
@@ -44,8 +45,8 @@ fn main() {
     let data_a: Vec<_> = set_a.into_iter().collect();
     let data_b = set_b.collect();
 
-    assert_eq!(data_a.len(), 100);
-    assert_eq!(data_b.len(), 100);
+    assert_eq!(data_a.len(), n);
+    assert_eq!(data_b.len(), n);
     assert_eq!(data_a, data_b);
 
     unsafe {

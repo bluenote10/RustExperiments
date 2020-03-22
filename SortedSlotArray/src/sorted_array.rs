@@ -25,6 +25,10 @@ where
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.num_elements
+    }
+
     pub fn insert(&mut self, t: T) -> bool {
         let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
 
@@ -44,7 +48,7 @@ where
         }
     }
 
-    pub fn remove(&mut self, t: T) -> bool {
+    pub fn remove(&mut self, t: &T) -> bool {
         let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
         if equals {
             self.data_raw[index_larger_or_equal] = None;
@@ -153,6 +157,7 @@ fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize
     }
 }
 
+#[inline]
 fn determine_insert_slot<'a, T>(data: &'a [Option<T>], insert_index: usize) -> Option<usize> {
     let idx_start = insert_index as i64 - 1;
     let mut idx_low: i64 = idx_start;
