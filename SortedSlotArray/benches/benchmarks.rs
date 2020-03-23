@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use sorted_slot_array::sorted_array::SortedArray;
 use sorted_slot_array::splay::SplaySet;
+use sorted_slot_array::vec_set::VecSet;
 
 use rand::Rng;
 
@@ -51,7 +52,20 @@ fn benchmarks(c: &mut Criterion) {
     c.bench_function("sarray insert", |b| b.iter_batched(
         || gen_data(),
         |data| {
-            let mut set = SortedArray::new(cmp_b, 10, 4);
+            let mut set = SortedArray::new(cmp_b, 10, 3);
+            for x in &data {
+                set.insert(*x);
+            }
+            //set.collect()
+            set.len()
+        },
+        BatchSize::SmallInput,
+    ));
+
+    c.bench_function("vecset insert", |b| b.iter_batched(
+        || gen_data(),
+        |data| {
+            let mut set = VecSet::new(cmp_b, 10);
             for x in &data {
                 set.insert(*x);
             }
@@ -82,7 +96,25 @@ fn benchmarks(c: &mut Criterion) {
     c.bench_function("sarray delete", |b| b.iter_batched(
         || {
             let data = gen_data();
-            let mut set = SortedArray::new(cmp_b, 10, 4);
+            let mut set = SortedArray::new(cmp_b, 1000, 3);
+            for x in &data {
+                set.insert(*x);
+            }
+            (data, set)
+        },
+        |(data, mut set)| {
+            for x in &data {
+                set.remove(x);
+            }
+            set.len()
+        },
+        BatchSize::SmallInput,
+    ));
+
+    c.bench_function("vecset delete", |b| b.iter_batched(
+        || {
+            let data = gen_data();
+            let mut set = VecSet::new(cmp_b, 1000);
             for x in &data {
                 set.insert(*x);
             }
