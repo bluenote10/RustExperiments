@@ -30,7 +30,7 @@ where
     }
 
     pub fn insert(&mut self, t: T) -> bool {
-        let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
+        let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, #[inline(always)] |x| (self.comparator)(x, &t));
 
         if !equals {
             let insert_slot = determine_insert_slot(&self.data_raw, index_larger_or_equal);
@@ -49,7 +49,7 @@ where
     }
 
     pub fn remove(&mut self, t: &T) -> bool {
-        let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, |x| (self.comparator)(x, &t));
+        let (index_larger_or_equal, equals) = binary_search_by(&self.data_raw, #[inline(always)] |x| (self.comparator)(x, &t));
         if equals {
             self.data_raw[index_larger_or_equal] = None;
             self.num_elements -= 1;
@@ -126,7 +126,7 @@ fn next<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize
     //}
     debug_assert!(idx <= bound);
     loop {
-        if let Some(el) = &data[i] {
+        if let Some(el) = unsafe { &data.get_unchecked(i) } {
             return Some((i, el));
         }
         if i == bound {
@@ -146,7 +146,7 @@ fn prev<'a, T>(data: &'a [Option<T>], idx: usize, bound: usize) -> Option<(usize
     //}
     debug_assert!(idx >= bound);
     loop {
-        if let Some(el) = &data[i] {
+        if let Some(el) = unsafe { &data.get_unchecked(i) } {
             return Some((i, el));
         }
         if i == bound {

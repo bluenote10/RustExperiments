@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::iter;
 
 pub struct VecSet<T, C>
 where

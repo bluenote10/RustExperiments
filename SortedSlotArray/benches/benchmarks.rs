@@ -11,6 +11,7 @@ static mut NUM_CALLS_A: u64 = 0;
 static mut NUM_CALLS_B: u64 = 0;
 
 
+#[inline]
 fn cmp_a(a: &f64, b: &f64) -> std::cmp::Ordering {
     unsafe {
         NUM_CALLS_A += 1;
@@ -18,7 +19,16 @@ fn cmp_a(a: &f64, b: &f64) -> std::cmp::Ordering {
     a.partial_cmp(b).unwrap()
 }
 
+#[inline]
 fn cmp_b(a: &f64, b: &f64) -> std::cmp::Ordering {
+    unsafe {
+        NUM_CALLS_B += 1;
+    }
+    a.partial_cmp(b).unwrap()
+}
+
+#[inline]
+fn cmp_c(a: &f64, b: &f64) -> std::cmp::Ordering {
     unsafe {
         NUM_CALLS_B += 1;
     }
@@ -65,7 +75,7 @@ fn benchmarks(c: &mut Criterion) {
     c.bench_function("vecset insert", |b| b.iter_batched(
         || gen_data(),
         |data| {
-            let mut set = VecSet::new(cmp_b, 10);
+            let mut set = VecSet::new(cmp_c, 10);
             for x in &data {
                 set.insert(*x);
             }
@@ -114,7 +124,7 @@ fn benchmarks(c: &mut Criterion) {
     c.bench_function("vecset delete", |b| b.iter_batched(
         || {
             let data = gen_data();
-            let mut set = VecSet::new(cmp_b, 1000);
+            let mut set = VecSet::new(cmp_c, 1000);
             for x in &data {
                 set.insert(*x);
             }
