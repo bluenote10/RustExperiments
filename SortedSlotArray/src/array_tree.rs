@@ -17,7 +17,6 @@ where
 {
     pub fn new(comparator: C, capacity: u16) -> ArrayTree<T, C> {
         let data = Vec::with_capacity(capacity as usize);
-        //data.push(Vec::with_capacity(capacity as usize));
         ArrayTree {
             comparator,
             data,
@@ -36,7 +35,8 @@ where
             return true;
         }
 
-        let (block_idx_first_larger_or_equals, equals) = binary_search_by(
+        // Binary search for block index
+        let (idx_block, equals) = binary_search_by(
             &self.data,
             |block| (self.comparator)(&block[0], &t),
         );
@@ -44,27 +44,67 @@ where
             return false;
         }
 
-        let block_idx_last_smaller = if block_idx_first_larger_or_equals > 0 {
-            block_idx_first_larger_or_equals - 1
+        // Convert from "first larger" to "last smaller" index semantics
+        let mut idx_block = if idx_block > 0 {
+            idx_block - 1
         } else {
             0
         };
 
-        let (value_idx_first_larger_or_equals, equals) = binary_search_by(
-            &self.data[block_idx_last_smaller],
+        // Split block if necessary
+        if self.data[idx_block].len() >= self.capacity as usize {
+            let tail_from = (self.capacity / 2) as usize;
+            let tail_upto = self.capacity as usize;
+            let block_tail = self.data[idx_block][tail_from .. tail_upto].to_vec();
+
+            self.data[idx_block].truncate(tail_from);
+            self.data.insert(idx_block + 1, block_tail);
+
+            // Determine into which of the two split blocks the new value goes.
+            // FIXME: Can we miss an "equals" case here if we go into block than doesn't have the equal element?
+            if (self.comparator)(&t, &self.data[idx_block + 1][0]) == Ordering::Greater {
+                idx_block += 1;
+            }
+        }
+
+        // Binary search for value index
+        let (idx_value, equals) = binary_search_by(
+            &self.data[idx_block],
             |x| (self.comparator)(&x, &t),
         );
         if equals {
             return false;
         }
 
-        if block_idx_last_smaller < self.data[block_idx_last_smaller].len() {
-            self.data[block_idx_last_smaller].insert(value_idx_first_larger_or_equals, t);
+        // Value insert
+        let block_len = self.data[idx_block].len();
+        if idx_block < block_len {
+            self.data[idx_block].insert(idx_value, t);
         } else {
-            self.data[block_idx_last_smaller].push(t);
+            self.data[idx_block].push(t);
         }
 
+        self.num_elements += 1;
         true
+    }
+
+    pub fn traverse<F>(&self, mut f: F)
+    where
+        F: FnMut(usize, &T),
+    {
+        let mut i = 0;
+        for block in &self.data {
+            for x in block {
+                f(i, x);
+                i += 1;
+            }
+        }
+    }
+
+    pub fn collect(&self) -> Vec<T> {
+        let mut data = Vec::with_capacity(self.num_elements);
+        self.traverse(|_, x| data.push(x.clone()));
+        data
     }
 
     pub fn debug(&self) {
@@ -155,18 +195,66 @@ mod test {
             }
         }};
     }
+    macro_rules! insert_many {
+        ($at:expr, $data:expr) => {
+            for x in $data.iter() {
+                $at.insert(x.clone());
+            }
+        };
+    }
 
     #[test]
-    fn test_array_tree() {
-        let mut at = ArrayTree::new(int_comparator, 32);
-        at.insert(0);
-        at.debug();
-        at.insert(1);
-        at.debug();
-        at.insert(-11);
-        at.debug();
-        let mut at = new_array!(2, vec![vec![1, 2], vec![4, 5]]);
+    fn test_array_tree_prefers_push() {
+        let mut at = new_array!(16, vec![vec![1, 2], vec![4, 5]]);
         assert_eq!(at.num_elements, 4);
-        at.debug();
+        at.insert(3);
+        assert_eq!(at.data, [vec![1, 2, 3], vec![4, 5]]);
+        assert_eq!(at.num_elements, 5);
+    }
+
+    #[test]
+    fn test_array_tree_split() {
+        let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
+        assert_eq!(at.num_elements, 4);
+        at.insert(1);
+        assert_eq!(at.data, [vec![1, 2], vec![4], vec![6, 8]]);
+        assert_eq!(at.num_elements, 5);
+
+        let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
+        assert_eq!(at.num_elements, 4);
+        at.insert(3);
+        assert_eq!(at.data, [vec![2, 3], vec![4], vec![6, 8]]);
+        assert_eq!(at.num_elements, 5);
+
+        let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
+        assert_eq!(at.num_elements, 4);
+        at.insert(5);
+        assert_eq!(at.data, [vec![2], vec![4, 5], vec![6, 8]]);
+        assert_eq!(at.num_elements, 5);
+
+        let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
+        assert_eq!(at.num_elements, 4);
+        at.insert(7);
+        assert_eq!(at.data, [vec![2, 4], vec![6, 7], vec![8]]);
+        assert_eq!(at.num_elements, 5);
+
+        let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
+        assert_eq!(at.num_elements, 4);
+        at.insert(9);
+        assert_eq!(at.data, [vec![2, 4], vec![6], vec![8, 9]]);
+        assert_eq!(at.num_elements, 5);
+    }
+
+    #[test]
+    fn test_array_tree_collect() {
+        for cap in vec![2, 3, 4, 5] {
+            let mut at = ArrayTree::new(int_comparator, cap as u16);
+            insert_many!(at, [1, 2, 3, 4]);
+            assert_eq!(at.collect(), [1, 2, 3, 4]);
+
+            let mut at = ArrayTree::new(int_comparator, cap as u16);
+            insert_many!(at, [1, 2, 3, 4]);
+            assert_eq!(at.collect(), [1, 2, 3, 4]);
+        }
     }
 }
