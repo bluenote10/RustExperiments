@@ -33,6 +33,7 @@ where
         // println!("\nInserting: {:?}", t);
         if self.data.len() == 0 {
             self.data.push(self.new_block(t));
+            self.num_elements += 1;
             return true;
         }
 
@@ -213,12 +214,20 @@ mod test {
     }
 
     #[test]
+    fn test_array_initial_push() {
+        let mut at = new_array!(16, vec![]);
+        assert_eq!(at.len(), 0);
+        at.insert(0);
+        assert_eq!(at.len(), 1);
+    }
+
+    #[test]
     fn test_array_tree_prefers_push() {
         let mut at = new_array!(16, vec![vec![1, 2], vec![4, 5]]);
-        assert_eq!(at.num_elements, 4);
+        assert_eq!(at.len(), 4);
         at.insert(3);
         assert_eq!(at.data, [vec![1, 2, 3], vec![4, 5]]);
-        assert_eq!(at.num_elements, 5);
+        assert_eq!(at.len(), 5);
     }
 
     #[test]
@@ -231,34 +240,34 @@ mod test {
     #[test]
     fn test_array_tree_split() {
         let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
-        assert_eq!(at.num_elements, 4);
+        assert_eq!(at.len(), 4);
         at.insert(1);
         assert_eq!(at.data, [vec![1, 2], vec![4], vec![6, 8]]);
-        assert_eq!(at.num_elements, 5);
+        assert_eq!(at.len(), 5);
 
         let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
-        assert_eq!(at.num_elements, 4);
+        assert_eq!(at.len(), 4);
         at.insert(3);
         assert_eq!(at.data, [vec![2, 3], vec![4], vec![6, 8]]);
-        assert_eq!(at.num_elements, 5);
+        assert_eq!(at.len(), 5);
 
         let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
-        assert_eq!(at.num_elements, 4);
+        assert_eq!(at.len(), 4);
         at.insert(5);
         assert_eq!(at.data, [vec![2], vec![4, 5], vec![6, 8]]);
-        assert_eq!(at.num_elements, 5);
+        assert_eq!(at.len(), 5);
 
         let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
-        assert_eq!(at.num_elements, 4);
+        assert_eq!(at.len(), 4);
         at.insert(7);
         assert_eq!(at.data, [vec![2, 4], vec![6, 7], vec![8]]);
-        assert_eq!(at.num_elements, 5);
+        assert_eq!(at.len(), 5);
 
         let mut at = new_array!(2, vec![vec![2, 4], vec![6, 8]]);
-        assert_eq!(at.num_elements, 4);
+        assert_eq!(at.len(), 4);
         at.insert(9);
         assert_eq!(at.data, [vec![2, 4], vec![6], vec![8, 9]]);
-        assert_eq!(at.num_elements, 5);
+        assert_eq!(at.len(), 5);
     }
 
     #[test]
@@ -267,10 +276,12 @@ mod test {
             let mut at = ArrayTree::new(int_comparator, cap as u16);
             insert_many!(at, [1, 2, 3, 4]);
             assert_eq!(at.collect(), [1, 2, 3, 4]);
+            assert_eq!(at.collect().len(), at.len());
 
             let mut at = ArrayTree::new(int_comparator, cap as u16);
             insert_many!(at, [1, 2, 3, 4]);
             assert_eq!(at.collect(), [1, 2, 3, 4]);
+            assert_eq!(at.collect().len(), at.len());
         }
     }
 
