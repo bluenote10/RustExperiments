@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use std::time::Duration;
 
 use sorted_slot_array::sorted_array::SortedArray;
+use sorted_slot_array::array_tree::ArrayTree;
 use sorted_slot_array::splay::SplaySet;
 use sorted_slot_array::vec_set::VecSet;
 
@@ -9,6 +10,8 @@ use rand::Rng;
 
 static mut NUM_CALLS_A: u64 = 0;
 static mut NUM_CALLS_B: u64 = 0;
+static mut NUM_CALLS_C: u64 = 0;
+static mut NUM_CALLS_D: u64 = 0;
 
 
 #[inline]
@@ -30,14 +33,22 @@ fn cmp_b(a: &f64, b: &f64) -> std::cmp::Ordering {
 #[inline]
 fn cmp_c(a: &f64, b: &f64) -> std::cmp::Ordering {
     unsafe {
-        NUM_CALLS_B += 1;
+        NUM_CALLS_C += 1;
+    }
+    a.partial_cmp(b).unwrap()
+}
+
+#[inline]
+fn cmp_d(a: &f64, b: &f64) -> std::cmp::Ordering {
+    unsafe {
+        NUM_CALLS_D += 1;
     }
     a.partial_cmp(b).unwrap()
 }
 
 fn gen_data() -> Vec<f64> {
     let mut rng = rand::thread_rng();
-    let vals: Vec<f64> = (0..1000).map(|_| rng.gen()).collect();
+    let vals: Vec<f64> = (0..10000).map(|_| rng.gen()).collect();
     vals
 }
 
@@ -76,6 +87,19 @@ fn benchmarks(c: &mut Criterion) {
         || gen_data(),
         |data| {
             let mut set = VecSet::new(cmp_c, 10);
+            for x in &data {
+                set.insert(*x);
+            }
+            //set.collect()
+            set.len()
+        },
+        BatchSize::SmallInput,
+    ));
+
+    c.bench_function("atree insert", |b| b.iter_batched(
+        || gen_data(),
+        |data| {
+            let mut set = ArrayTree::new(cmp_d, 32);
             for x in &data {
                 set.insert(*x);
             }
