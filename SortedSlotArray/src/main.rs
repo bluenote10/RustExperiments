@@ -1,25 +1,25 @@
 extern crate sorted_slot_array;
 
+use std::cmp::{Eq, Ord, Ordering};
+
 use rand::Rng;
 
 use sorted_slot_array::sorted_array::SortedArray;
 use sorted_slot_array::array_tree::ArrayTree;
 use sorted_slot_array::splay::SplaySet;
 use sorted_slot_array::vec_set::VecSet;
+use std::collections::BTreeSet;
+use ordered_float::OrderedFloat;
+
+use std::time::{Duration, Instant};
 
 use pretty_assertions::assert_eq;
-
-
-fn gen_rand_values(n: usize) -> Vec<f64> {
-    let mut rng = rand::thread_rng();
-    let values: Vec<f64> = (0..n).map(|_| rng.gen()).collect();
-    values
-}
 
 macro_rules! create_cmp {
     ($func:ident, $get:ident, $count:ident) => {
         static mut $count: u64 = 0;
 
+        #[inline]
         fn $func(a: &f64, b: &f64) -> std::cmp::Ordering {
             unsafe {
                 $count += 1;
@@ -35,25 +35,67 @@ macro_rules! create_cmp {
     };
 }
 
+#[derive(Debug)]
+struct FloatWrapper(f64);
 
-create_cmp!(cmp_a, get_num_calls_a, NUM_CALLS_A);
-create_cmp!(cmp_b, get_num_calls_b, NUM_CALLS_B);
-create_cmp!(cmp_c, get_num_calls_c, NUM_CALLS_C);
-create_cmp!(cmp_d, get_num_calls_d, NUM_CALLS_D);
+impl Eq for FloatWrapper {}
 
+impl PartialEq for FloatWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        panic!("eq called");
+        if self.0.is_nan() && other.0.is_nan() {
+            true
+        } else {
+            self.0 == other.0
+        }
+    }
+}
+
+impl PartialOrd for FloatWrapper {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        panic!("partial_cmp called");
+        Some(self.cmp(other))
+    }
+}
+
+create_cmp!(cmp_b_tree, get_num_calls_b_tree, NUM_CALLS_B_TREE);
+
+impl Ord for FloatWrapper {
+    fn cmp(&self, other: &Self) -> Ordering {
+        cmp_b_tree(&self.0, &other.0)
+    }
+}
+
+fn gen_rand_values(n: usize) -> Vec<f64> {
+    let mut rng = rand::thread_rng();
+    let values: Vec<f64> = (0..n).map(|_| rng.gen()).collect();
+    values
+}
+
+create_cmp!(cmp_array_tree, get_num_calls_array_tree, NUM_CALLS_ARRAY_TREE);
 
 fn benchmark_fill_array_tree(values: &[f64]) -> usize {
-    let mut set = ArrayTree::new(cmp_d, 16);
+    let mut set = ArrayTree::new(cmp_array_tree, 16);
     for x in values {
         set.insert(*x);
     }
     set.len()
 }
 
+create_cmp!(cmp_splay_tree, get_num_calls_splay_tree, NUM_CALLS_SPLAY_TREE);
+
 fn benchmark_fill_splay_tree(values: &[f64]) -> usize {
-    let mut set = SplaySet::new(cmp_a);
+    let mut set = SplaySet::new(cmp_splay_tree);
     for x in values {
         set.insert(*x);
+    }
+    set.len()
+}
+
+fn benchmark_fill_b_tree(values: &[f64]) -> usize {
+    let mut set = BTreeSet::new();
+    for x in values {
+        set.insert(FloatWrapper(*x));
     }
     set.len()
 }
@@ -81,6 +123,10 @@ fn main() {
             func: benchmark_fill_splay_tree,
         },
         Benchmark {
+            name: "BTree".to_string(),
+            func: benchmark_fill_b_tree,
+        },
+        Benchmark {
             name: "ArrayStump".to_string(),
             func: benchmark_fill_array_tree,
         },
@@ -88,10 +134,16 @@ fn main() {
 
     for benchmark in benchmarks {
         println!("Running benchmark: {}", benchmark.name);
-        let n = 1000;
+        let n = 100000;
         let values = gen_rand_values(n);
         assert_eq!(values.len(), n);
+
+        let start = Instant::now();
         let len = (benchmark.func)(&values);
+        let time = start.elapsed();
+
+        println!("{:?}", time);
+
         assert_eq!(len, n)
     }
 
@@ -133,9 +185,8 @@ fn main() {
     assert_eq!(data_a, data_d);
     */
 
-    println!("Num calls A: {}", get_num_calls_a());
-    println!("Num calls B: {}", get_num_calls_b());
-    println!("Num calls C: {}", get_num_calls_c());
-    println!("Num calls D: {}", get_num_calls_d());
+    println!("Num calls array tree: {:12}", get_num_calls_array_tree());
+    println!("Num calls splay tree: {:12}", get_num_calls_splay_tree());
+    println!("Num calls B tree:     {:12}", get_num_calls_b_tree());
 
 }
