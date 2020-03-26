@@ -60,6 +60,9 @@ where
             let tail_upto = self.capacity as usize;
             let block_tail = self.data[idx_block][tail_from .. tail_upto].to_vec();
 
+            // Note: The `.to_vec()` requires T: Clone but is faster than using drain. Keep?
+            // let block_tail: Vec<_> = self.data[idx_block].drain(tail_from .. tail_upto).collect();
+
             self.data[idx_block].truncate(tail_from);
             self.data.insert(idx_block + 1, block_tail);
 
@@ -95,6 +98,63 @@ where
 
         self.num_elements += 1;
         true
+    }
+
+    pub fn remove(&mut self, t: &T) -> bool {
+        // println!("\nRemoving: {:?}", t);
+        if self.data.len() == 0 {
+            return false;
+        }
+
+        if let Some((idx_block, idx_value)) = self.find(t) {
+            if self.data[idx_block].len() >= 1 {
+                self.data[idx_block].remove(idx_value);
+            } else {
+                self.data.remove(idx_block);
+            }
+            self.num_elements -= 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    #[inline]
+    pub fn find(&self, t: &T) -> Option<(usize, usize)> {
+        // Binary search for block index
+        // println!("\nfind: {:?}", t);
+        let (idx_block, equals) = binary_search_by(
+            &self.data,
+            |block| (self.comparator)(&block[0], &t),
+        );
+        if equals {
+            return Some((idx_block, 0));
+        }
+        // println!("{} {}", equals, idx_block);
+
+        // Convert from "first larger" to "last smaller" index semantics
+        let idx_block = if idx_block > 0 {
+            idx_block - 1
+        } else {
+            0
+        };
+        /*
+        if idx_block == self.data.len() {
+            return None;
+        }
+        */
+
+        // Binary search for value index
+        let (idx_value, equals) = binary_search_by(
+            &self.data[idx_block],
+            |x| (self.comparator)(&x, &t),
+        );
+        // println!("{} {}", equals, idx_value);
+        if equals {
+            return Some((idx_block, idx_value));
+        }
+
+        None
     }
 
     pub fn traverse<F>(&self, mut f: F)
@@ -283,6 +343,34 @@ mod test {
             assert_eq!(at.collect(), [1, 2, 3, 4]);
             assert_eq!(at.collect().len(), at.len());
         }
+    }
+
+    #[test]
+    fn test_find() {
+        let at = new_array!(16, vec![vec![2, 4], vec![6], vec![8]]);
+        assert_eq!(at.find(&2), Some((0, 0)));
+        assert_eq!(at.find(&4), Some((0, 1)));
+        assert_eq!(at.find(&6), Some((1, 0)));
+        assert_eq!(at.find(&8), Some((2, 0)));
+        for x in [1, 3, 5, 7, 9].iter() {
+            assert_eq!(at.find(x), None);
+        }
+    }
+
+    #[test]
+    fn test_remove() {
+        let mut at = new_array!(16, vec![vec![2, 4], vec![6], vec![8]]);
+        at.remove(&2);
+        assert_eq!(at.collect(), vec![4, 6, 8]);
+        let mut at = new_array!(16, vec![vec![2, 4], vec![6], vec![8]]);
+        at.remove(&4);
+        assert_eq!(at.collect(), vec![2, 6, 8]);
+        let mut at = new_array!(16, vec![vec![2, 4], vec![6], vec![8]]);
+        at.remove(&6);
+        assert_eq!(at.collect(), vec![2, 4, 8]);
+        let mut at = new_array!(16, vec![vec![2, 4], vec![6], vec![8]]);
+        at.remove(&8);
+        assert_eq!(at.collect(), vec![2, 4, 6]);
     }
 
     //#[ignore]
