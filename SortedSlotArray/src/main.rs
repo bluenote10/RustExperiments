@@ -79,7 +79,7 @@ create_cmp!(cmp_array_tree, get_num_calls_array_tree, NUM_CALLS_ARRAY_TREE);
 create_cmp!(cmp_splay_tree, get_num_calls_splay_tree, NUM_CALLS_SPLAY_TREE);
 
 
-fn generic_fill_benchmark<T, F1, F2, F3>(values: &[f64], init: F1, insert: F2, get_len: F3) -> Vec<f64>
+fn generic_fill_benchmark<T, F1, F2, F3>(values: &[f64], init: F1, insert: F2, get_len: F3) -> Vec<(usize, f64)>
 where
     F1: Fn() -> T,
     F2: Fn(&mut T, f64),
@@ -88,12 +88,13 @@ where
 {
     let mut set = init();
 
-    let mut elapsed_times = Vec::new();
+    let mut elapsed_times = Vec::with_capacity(values.len());
+
     let start = Instant::now();
     for (i, x) in values.iter().enumerate() {
         insert(&mut set, *x);
         if (i + 1) % 10 == 0 {
-            elapsed_times.push(start.elapsed().as_secs_f64());
+            elapsed_times.push((i + 1, start.elapsed().as_secs_f64()));
         }
     }
     assert_eq!(get_len(&set), values.len());
@@ -102,6 +103,7 @@ where
 
 }
 
+/*
 fn benchmark_fill_array_tree(values: &[f64]) -> usize {
     let mut set = ArrayTree::new(cmp_array_tree, 16);
     for x in values {
@@ -125,6 +127,7 @@ fn benchmark_fill_b_tree(values: &[f64]) -> usize {
     }
     set.len()
 }
+*/
 
 /*
 struct Benchmark<F>
@@ -139,7 +142,7 @@ struct Benchmark<'a>
 {
     name: String,
     //func: fn(&[f64]) -> usize,
-    func: &'a dyn Fn(&[f64]) -> Vec<f64>
+    func: &'a dyn Fn(&[f64]) -> Vec<(usize, f64)>
 }
 
 
@@ -148,7 +151,7 @@ fn run_fill_benchmarks() {
     let fill_array_tree = |values: &[f64]| {
         generic_fill_benchmark(
             &values,
-            || ArrayTree::new(cmp_array_tree, 128),
+            || ArrayTree::new(cmp_array_tree, 64),
             |set, x| { set.insert(x); },
             |set| set.len(),
         )
@@ -194,9 +197,12 @@ fn run_fill_benchmarks() {
         let values = gen_rand_values(n);
         assert_eq!(values.len(), n);
 
-        let elapsed_times = (benchmark.func)(&values);
+        let measurements = (benchmark.func)(&values);
 
-        helpers::export_elapsed_times(&benchmark.name, &format!("results/{}.json", benchmark.name), &elapsed_times);
+        let iters: Vec<_> = measurements.iter().map(|i_t| i_t.0).collect();
+        let times: Vec<_> = measurements.iter().map(|i_t| i_t.1).collect();
+
+        helpers::export_elapsed_times(&benchmark.name, &format!("results/fill_avg_{}.json", benchmark.name), &iters, &times);
         //assert_eq!(len, n)
     }
 
@@ -210,6 +216,7 @@ fn run_fill_statistics() {
 
     let mut set = ArrayTree::new(cmp_array_tree, 256);
 
+    let mut iters = Vec::new();
     let mut times = Vec::new();
     let mut fill_ratio = Vec::new();
     let mut num_blocks = Vec::new();
@@ -220,6 +227,7 @@ fn run_fill_statistics() {
     for (i, x) in values.iter().enumerate() {
         set.insert(*x);
         if (i + 1) % 10 == 0 {
+            iters.push(i + 1);
             times.push(start.elapsed().as_secs_f64());
             fill_ratio.push(set.get_leaf_fill_ratio());
             num_blocks.push(set.get_num_blocks());
@@ -228,14 +236,17 @@ fn run_fill_statistics() {
     }
     assert_eq!(set.len(), values.len());
 
-    helpers::export_stats(&times, &fill_ratio, &num_blocks, &capacity);
+    helpers::export_stats(&iters, &times, &fill_ratio, &num_blocks, &capacity);
 }
 
 
 fn main() {
+    if cfg!(debug_assertions) {
+        println!("WARNING: Debug assertions are enabled. Benchmarking should be done in `--release`.");
+    }
 
-    //run_fill_benchmarks();
-    run_fill_statistics();
+    run_fill_benchmarks();
+    //run_fill_statistics();
 
     /*
     // let a = if 1 < 2 { benchmark_fill_array_tree } else { benchmark_fill_splay_tree };

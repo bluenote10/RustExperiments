@@ -4,10 +4,11 @@ use serde_json::json;
 
 use std::process::{Command, Stdio};
 
-pub fn export_elapsed_times(name: &str, filename: &str, times: &[f64]) {
+pub fn export_elapsed_times(name: &str, filename: &str, iters: &[usize], times: &[f64]) {
 
     let json_data = json!({
         "name": name,
+        "iters": iters,
         "times": times,
     });
 
@@ -34,9 +35,10 @@ pub fn call_plots() {
         .expect("Failed to run Python plot.");
 }
 
-pub fn export_stats(times: &[f64], fill_ratio: &[f64], num_blocks: &[usize], capacity: &[u16]) {
+pub fn export_stats(iters: &[usize], times: &[f64], fill_ratio: &[f64], num_blocks: &[usize], capacity: &[u16]) {
 
     let json_data = json!({
+        "iters": iters,
         "times": times,
         "fill_ratio": fill_ratio,
         "num_blocks": num_blocks,
