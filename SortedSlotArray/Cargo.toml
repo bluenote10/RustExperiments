@@ -10,7 +10,8 @@ edition = "2018"
 
 rand = "0.7.3"
 pretty_assertions = "0.6"
-ordered-float = "1.0"
+# ordered-float = "1.0"
+serde_json = { version = "1.0.44", features = ["arbitrary_precision"] }
 
 [dev-dependencies]
 

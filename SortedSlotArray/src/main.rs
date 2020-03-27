@@ -9,11 +9,14 @@ use sorted_slot_array::array_tree::ArrayTree;
 use sorted_slot_array::splay::SplaySet;
 use sorted_slot_array::vec_set::VecSet;
 use std::collections::BTreeSet;
-use ordered_float::OrderedFloat;
+// use ordered_float::OrderedFloat;
 
 use std::time::{Duration, Instant};
 
 use pretty_assertions::assert_eq;
+
+mod helpers;
+
 
 macro_rules! create_cmp {
     ($func:ident, $get:ident, $count:ident) => {
@@ -73,6 +76,31 @@ fn gen_rand_values(n: usize) -> Vec<f64> {
 }
 
 create_cmp!(cmp_array_tree, get_num_calls_array_tree, NUM_CALLS_ARRAY_TREE);
+create_cmp!(cmp_splay_tree, get_num_calls_splay_tree, NUM_CALLS_SPLAY_TREE);
+
+
+fn generic_fill_benchmark<T, F1, F2, F3>(values: &[f64], init: F1, insert: F2, get_len: F3) -> Vec<f64>
+where
+    F1: Fn() -> T,
+    F2: Fn(&mut T, f64),
+    F3: Fn(&T) -> usize,
+
+{
+    let mut set = init();
+
+    let mut elapsed_times = Vec::new();
+    let start = Instant::now();
+    for (i, x) in values.iter().enumerate() {
+        insert(&mut set, *x);
+        if (i + 1) % 10 == 0 {
+            elapsed_times.push(start.elapsed().as_secs_f64());
+        }
+    }
+    assert_eq!(get_len(&set), values.len());
+
+    elapsed_times
+
+}
 
 fn benchmark_fill_array_tree(values: &[f64]) -> usize {
     let mut set = ArrayTree::new(cmp_array_tree, 16);
@@ -81,8 +109,6 @@ fn benchmark_fill_array_tree(values: &[f64]) -> usize {
     }
     set.len()
 }
-
-create_cmp!(cmp_splay_tree, get_num_calls_splay_tree, NUM_CALLS_SPLAY_TREE);
 
 fn benchmark_fill_splay_tree(values: &[f64]) -> usize {
     let mut set = SplaySet::new(cmp_splay_tree);
@@ -109,43 +135,135 @@ where
     func: F,
 }
 */
-struct Benchmark
+struct Benchmark<'a>
 {
     name: String,
-    func: fn(&[f64]) -> usize,
+    //func: fn(&[f64]) -> usize,
+    func: &'a dyn Fn(&[f64]) -> Vec<f64>
 }
 
-fn main() {
+
+fn run_fill_benchmarks() {
+
+    let fill_array_tree = |values: &[f64]| {
+        generic_fill_benchmark(
+            &values,
+            || ArrayTree::new(cmp_array_tree, 128),
+            |set, x| { set.insert(x); },
+            |set| set.len(),
+        )
+    };
+
+    let fill_splay_tree = |values: &[f64]| {
+        generic_fill_benchmark(
+            &values,
+            || SplaySet::new(cmp_splay_tree),
+            |set, x| { set.insert(x); },
+            |set| set.len(),
+        )
+    };
+
+
+    let fill_b_tree = |values: &[f64]| {
+        generic_fill_benchmark(
+            &values,
+            || BTreeSet::new(),
+            |set, x| { set.insert(FloatWrapper(x)); },
+            |set| set.len(),
+        )
+    };
 
     let benchmarks: Vec<Benchmark> = vec![
         Benchmark {
             name: "SplayTree".to_string(),
-            func: benchmark_fill_splay_tree,
+            func: &fill_splay_tree,
         },
         Benchmark {
             name: "BTree".to_string(),
-            func: benchmark_fill_b_tree,
+            func: &fill_b_tree,
         },
         Benchmark {
             name: "ArrayStump".to_string(),
-            func: benchmark_fill_array_tree,
+            func: &fill_array_tree,
         },
     ];
 
     for benchmark in benchmarks {
         println!("Running benchmark: {}", benchmark.name);
-        let n = 100000;
+        let n = 1000000;
         let values = gen_rand_values(n);
         assert_eq!(values.len(), n);
 
-        let start = Instant::now();
-        let len = (benchmark.func)(&values);
-        let time = start.elapsed();
+        let elapsed_times = (benchmark.func)(&values);
 
-        println!("{:?}", time);
-
-        assert_eq!(len, n)
+        helpers::export_elapsed_times(&benchmark.name, &format!("results/{}.json", benchmark.name), &elapsed_times);
+        //assert_eq!(len, n)
     }
+
+    helpers::call_plots();
+}
+
+/*
+fn generic_benchmark<T, F1, F2, F3>(values: &[f64], init: F1, insert: F2, get_len: F3) -> Vec<f64>
+where
+    F1: Fn() -> T,
+    F2: Fn(&mut T, f64),
+    F3: Fn(&T) -> usize,
+
+{
+    let mut set = init();
+
+    let mut elapsed_times = Vec::new();
+    let start = Instant::now();
+    for (i, x) in values.iter().enumerate() {
+        insert(&mut set, *x);
+        if (i + 1) % 10 == 0 {
+            elapsed_times.push(start.elapsed().as_secs_f64());
+        }
+    }
+    assert_eq!(get_len(&set), values.len());
+
+    elapsed_times
+
+}
+*/
+
+fn benchmark_fill_array_tree_enhanced(values: &[f64]) -> Vec<f64> {
+
+    let mut set = ArrayTree::new(cmp_array_tree, 16);
+
+    let mut elapsed_times = Vec::new();
+    let start = Instant::now();
+    for (i, x) in values.iter().enumerate() {
+        set.insert(*x);
+        if (i + 1) % 10 == 0 {
+            elapsed_times.push(start.elapsed().as_secs_f64());
+        }
+    }
+    assert_eq!(set.len(), values.len());
+
+    elapsed_times
+}
+
+fn run_fill_statistics() {
+    let n = 100000;
+    let values = gen_rand_values(n);
+
+    benchmark_fill_array_tree_enhanced(&values);
+
+    generic_fill_benchmark(
+        &values,
+        || ArrayTree::new(cmp_array_tree, 16),
+        |set, x| { set.insert(x); },
+        |set| set.len(),
+    );
+}
+
+
+fn main() {
+
+    run_fill_benchmarks();
+    //run_fill_statistics();
 
     /*
     // let a = if 1 < 2 { benchmark_fill_array_tree } else { benchmark_fill_splay_tree };
