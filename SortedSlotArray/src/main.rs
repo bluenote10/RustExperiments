@@ -203,67 +203,39 @@ fn run_fill_benchmarks() {
     helpers::call_plots();
 }
 
-/*
-fn generic_benchmark<T, F1, F2, F3>(values: &[f64], init: F1, insert: F2, get_len: F3) -> Vec<f64>
-where
-    F1: Fn() -> T,
-    F2: Fn(&mut T, f64),
-    F3: Fn(&T) -> usize,
 
-{
-    let mut set = init();
+fn run_fill_statistics() {
+    let n = 1000000;
+    let values = gen_rand_values(n);
 
-    let mut elapsed_times = Vec::new();
-    let start = Instant::now();
-    for (i, x) in values.iter().enumerate() {
-        insert(&mut set, *x);
-        if (i + 1) % 10 == 0 {
-            elapsed_times.push(start.elapsed().as_secs_f64());
-        }
-    }
-    assert_eq!(get_len(&set), values.len());
+    let mut set = ArrayTree::new(cmp_array_tree, 256);
 
-    elapsed_times
+    let mut times = Vec::new();
+    let mut fill_ratio = Vec::new();
+    let mut num_blocks = Vec::new();
+    let mut capacity = Vec::new();
 
-}
-*/
 
-fn benchmark_fill_array_tree_enhanced(values: &[f64]) -> Vec<f64> {
-
-    let mut set = ArrayTree::new(cmp_array_tree, 16);
-
-    let mut elapsed_times = Vec::new();
     let start = Instant::now();
     for (i, x) in values.iter().enumerate() {
         set.insert(*x);
         if (i + 1) % 10 == 0 {
-            elapsed_times.push(start.elapsed().as_secs_f64());
+            times.push(start.elapsed().as_secs_f64());
+            fill_ratio.push(set.get_leaf_fill_ratio());
+            num_blocks.push(set.get_num_blocks());
+            capacity.push(set.get_capacity());
         }
     }
     assert_eq!(set.len(), values.len());
 
-    elapsed_times
-}
-
-fn run_fill_statistics() {
-    let n = 100000;
-    let values = gen_rand_values(n);
-
-    benchmark_fill_array_tree_enhanced(&values);
-
-    generic_fill_benchmark(
-        &values,
-        || ArrayTree::new(cmp_array_tree, 16),
-        |set, x| { set.insert(x); },
-        |set| set.len(),
-    );
+    helpers::export_stats(&times, &fill_ratio, &num_blocks, &capacity);
 }
 
 
 fn main() {
 
-    run_fill_benchmarks();
-    //run_fill_statistics();
+    //run_fill_benchmarks();
+    run_fill_statistics();
 
     /*
     // let a = if 1 < 2 { benchmark_fill_array_tree } else { benchmark_fill_splay_tree };

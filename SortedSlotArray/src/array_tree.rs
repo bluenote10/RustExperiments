@@ -185,6 +185,18 @@ where
         block.push(t);
         block
     }
+
+    pub fn get_leaf_fill_ratio(&self) -> f64 {
+        (self.num_elements as f64) / (self.capacity as f64 * self.data.len() as f64)
+    }
+
+    pub fn get_capacity(&self) -> u16 {
+        self.capacity
+    }
+
+    pub fn get_num_blocks(&self) -> usize {
+        self.data.len()
+    }
 }
 
 

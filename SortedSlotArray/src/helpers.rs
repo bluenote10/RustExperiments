@@ -33,3 +33,20 @@ pub fn call_plots() {
         .output()
         .expect("Failed to run Python plot.");
 }
+
+pub fn export_stats(times: &[f64], fill_ratio: &[f64], num_blocks: &[usize], capacity: &[u16]) {
+
+    let json_data = json!({
+        "times": times,
+        "fill_ratio": fill_ratio,
+        "num_blocks": num_blocks,
+        "capacity": capacity,
+    });
+
+    let path = Path::new("results/fill_stats.json");
+    let parent = path.parent().unwrap();
+    create_dir_all(parent).unwrap();
+
+    let f = File::create(path).expect("Unable to create json file.");
+    serde_json::to_writer_pretty(f, &json_data).expect("Unable to write json file.");
+}
