@@ -1,4 +1,3 @@
-pub mod sorted_array;
-pub mod array_tree;
-pub mod vec_set;
-pub mod splay;
+mod array_stump;
+
+pub use crate::array_stump::ArrayTree;

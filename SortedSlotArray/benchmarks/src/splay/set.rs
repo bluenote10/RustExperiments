@@ -9,6 +9,7 @@ where
     tree: SplayTree<T, (), C>,
 }
 
+#[allow(dead_code)]
 impl<T, C> SplaySet<T, C>
 where
     C: Fn(&T, &T) -> Ordering,

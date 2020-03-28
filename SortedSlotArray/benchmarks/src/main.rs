@@ -1,13 +1,18 @@
-extern crate sorted_slot_array;
+extern crate array_stump;
+
+mod helpers;
+mod slot_array;
+mod vec_set;
+mod splay;
+
+use array_stump::ArrayTree;
 
 use std::cmp::{Eq, Ord, Ordering};
-
 use rand::Rng;
 
-use sorted_slot_array::sorted_array::SortedArray;
-use sorted_slot_array::array_tree::ArrayTree;
-use sorted_slot_array::splay::SplaySet;
-use sorted_slot_array::vec_set::VecSet;
+use slot_array::SortedArray;
+use splay::SplaySet;
+use vec_set::VecSet;
 use std::collections::BTreeSet;
 // use ordered_float::OrderedFloat;
 
@@ -15,7 +20,6 @@ use std::time::{Duration, Instant};
 
 use pretty_assertions::assert_eq;
 
-mod helpers;
 
 
 macro_rules! create_cmp {

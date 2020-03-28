@@ -14,6 +14,7 @@ where
     size: usize,
 }
 
+#[allow(dead_code)]
 impl<K, V, C> SplayTree<K, V, C>
 where
     C: Fn(&K, &K) -> Ordering,

@@ -2,10 +2,10 @@ extern crate sorted_slot_array;
 
 use rand::Rng;
 
-use sorted_slot_array::sorted_array::SortedArray;
-use sorted_slot_array::array_tree::ArrayTree;
-use sorted_slot_array::splay::SplaySet;
-use sorted_slot_array::vec_set::VecSet;
+use slot_array::sorted_array::SortedArray;
+use slot_array::array_tree::ArrayTree;
+use slot_array::splay::SplaySet;
+use slot_array::vec_set::VecSet;
 
 use pretty_assertions::assert_eq;
 

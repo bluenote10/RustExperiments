@@ -461,8 +461,8 @@ mod test {
     fn test_traverse() {
         let v_empty1: Vec<Option<i32>> = vec![];
         let v_empty2: Vec<Option<i32>> = vec![None];
-        assert_eq!(collect(&v_empty1), vec![]);
-        assert_eq!(collect(&v_empty2), vec![]);
+        assert_eq!(collect(&v_empty1), Vec::<i32>::new());
+        assert_eq!(collect(&v_empty2), Vec::<i32>::new());
         assert_eq!(collect(&[Some(20), Some(30)]), vec![20, 30]);
         assert_eq!(collect(&[None, Some(20), None, Some(30), None]), vec![20, 30]);
     }
