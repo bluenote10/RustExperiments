@@ -27,7 +27,7 @@ macro_rules! create_cmp {
             unsafe {
                 $count += 1;
             }
-            a.partial_cmp(b).unwrap()
+            a.exp().partial_cmp(&b.exp()).unwrap()
         }
 
         fn $get() -> u64 {
