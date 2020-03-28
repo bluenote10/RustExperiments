@@ -274,6 +274,89 @@ mod test {
         a.cmp(b)
     }
 
+    // ------------------------------------------------------------------------
+    // Binary search testing
+    // ------------------------------------------------------------------------
+
+    pub fn binary_search_by_reference<T, F>(data: &[T], mut f: F) -> (usize, bool)
+    where
+        F: FnMut(&T) -> Ordering,
+    {
+        for i in 0 .. data.len() {
+            let x = &data[i];
+            let cmp = f(x);
+            match cmp {
+                Ordering::Equal => return (i, true),
+                Ordering::Greater => return (i, false),
+                _ => {}
+            }
+        }
+        (data.len(), false)
+    }
+
+    fn generate_random_array(rng: &mut StdRng, len: usize) -> (Vec<i32>, Vec<i32>) {
+        let mut data = Vec::new();
+
+        let mut last = 0;
+        for _ in 0 .. len {
+            data.push(last);
+            if rng.gen::<bool>() {
+                last += 1;
+            }
+        }
+
+        let mut test_value = data.clone();
+        if test_value.len() > 0 {
+            let min = data.iter().min().unwrap() - 1;
+            let max = data.iter().max().unwrap() + 1;
+            test_value.extend(&[min, max]);
+        }
+        (data, test_value)
+    }
+
+    fn test_against_reference(data: &[i32], value: i32) {
+        println!("{:?} {}", data, value);
+
+        let (idx_actual, equals_actual) = binary_search_by(&data, |x| x.cmp(&value));
+        let (idx_expect, equals_expect) = binary_search_by_reference(&data, |x| x.cmp(&value));
+
+        assert_eq!(equals_actual, equals_expect);
+        if !equals_expect {
+            assert_eq!(idx_actual, idx_expect);
+        } else {
+            assert_eq!(data[idx_actual], value);
+        }
+    }
+
+    #[test]
+    fn test_binary_search_basic() {
+        let data = [1, 2, 3];
+        assert_eq!(binary_search_by(&data, |x| int_comparator(x, &0)), (0, false));
+        assert_eq!(binary_search_by(&data, |x| int_comparator(x, &1)), (0, true));
+        assert_eq!(binary_search_by(&data, |x| int_comparator(x, &2)), (1, true));
+        assert_eq!(binary_search_by(&data, |x| int_comparator(x, &3)), (2, true));
+        assert_eq!(binary_search_by(&data, |x| int_comparator(x, &4)), (3, false));
+    }
+
+    #[test]
+    fn test_binary_search_brute_force() {
+        let num_random_variations = 100;
+        let mut rng: StdRng = SeedableRng::seed_from_u64(0);
+        for array_len in 0 ..= 32 {
+            for _ in 0 .. num_random_variations {
+                let (data, test_values) = generate_random_array(&mut rng, array_len);
+                assert_eq!(data.len(), array_len);
+                for value in &test_values {
+                    test_against_reference(&data, *value);
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Array tests
+    // ------------------------------------------------------------------------
+
     macro_rules! new_array {
         ($capacity:expr, $data:expr) => {{
             let data: Vec<Vec<i32>> = $data;
@@ -395,7 +478,6 @@ mod test {
         assert_eq!(at.collect(), vec![2, 4, 6]);
     }
 
-    //#[ignore]
     #[test]
     fn test_failing() {
         let mut at = ArrayTree::new(|a: &f64, b: &f64| a.partial_cmp(b).unwrap(), 16);
