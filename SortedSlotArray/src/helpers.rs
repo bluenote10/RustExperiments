@@ -4,10 +4,15 @@ use serde_json::json;
 
 use std::process::{Command, Stdio};
 
-pub fn export_elapsed_times(name: &str, filename: &str, iters: &[usize], times: &[f64]) {
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+
+
+pub fn export_elapsed_times(name: &str, run: i32, filename: &str, iters: &[usize], times: &[f64]) {
 
     let json_data = json!({
         "name": name,
+        "run": run,
         "iters": iters,
         "times": times,
     });
@@ -28,11 +33,13 @@ pub fn call_plots() {
         .join("scripts")
         .join("plot.py");
 
-    Command::new(script_path.as_os_str())
+    let mut child = Command::new(script_path.as_os_str())
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
-        .output()
+        .spawn()
         .expect("Failed to run Python plot.");
+
+    child.wait().expect("Failed to wait for child");
 }
 
 pub fn export_stats(iters: &[usize], times: &[f64], fill_ratio: &[f64], num_blocks: &[usize], capacity: &[u16]) {
@@ -51,4 +58,14 @@ pub fn export_stats(iters: &[usize], times: &[f64], fill_ratio: &[f64], num_bloc
 
     let f = File::create(path).expect("Unable to create json file.");
     serde_json::to_writer_pretty(f, &json_data).expect("Unable to write json file.");
+}
+
+pub fn shuffle<T>(v: &[T]) -> Vec<T>
+where
+    T: Clone
+{
+    let mut rng = thread_rng();
+    let mut v_cloned = v.to_vec();
+    v_cloned.shuffle(&mut rng);
+    v_cloned
 }

@@ -79,7 +79,7 @@ create_cmp!(cmp_array_tree, get_num_calls_array_tree, NUM_CALLS_ARRAY_TREE);
 create_cmp!(cmp_splay_tree, get_num_calls_splay_tree, NUM_CALLS_SPLAY_TREE);
 
 
-fn generic_fill_benchmark<T, F1, F2, F3>(values: &[f64], init: F1, insert: F2, get_len: F3) -> Vec<(usize, f64)>
+fn generic_fill_benchmark<T, F1, F2, F3>(values: &[f64], measure_every: i32, init: F1, insert: F2, get_len: F3) -> Vec<(usize, f64)>
 where
     F1: Fn() -> T,
     F2: Fn(&mut T, f64),
@@ -93,8 +93,10 @@ where
     let start = Instant::now();
     for (i, x) in values.iter().enumerate() {
         insert(&mut set, *x);
-        if (i + 1) % 10 == 0 {
-            elapsed_times.push((i + 1, start.elapsed().as_secs_f64()));
+
+        let len = i + 1;
+        if len % measure_every as usize == 0 {
+            elapsed_times.push((len, start.elapsed().as_secs_f64()));
         }
     }
     assert_eq!(get_len(&set), values.len());
@@ -138,19 +140,25 @@ where
     func: F,
 }
 */
+#[derive(Clone)]
 struct Benchmark<'a>
 {
     name: String,
     //func: fn(&[f64]) -> usize,
-    func: &'a dyn Fn(&[f64]) -> Vec<(usize, f64)>
+    func: &'a dyn Fn(&[f64]) -> Vec<(usize, f64)>,
+    run: i32,
 }
 
 
 fn run_fill_benchmarks() {
 
+    let n = 1000000;
+    let measure_every = 25;
+
     let fill_array_tree = |values: &[f64]| {
         generic_fill_benchmark(
             &values,
+            measure_every,
             || ArrayTree::new(cmp_array_tree, 512),
             |set, x| { set.insert(x); },
             |set| set.len(),
@@ -160,6 +168,7 @@ fn run_fill_benchmarks() {
     let fill_splay_tree = |values: &[f64]| {
         generic_fill_benchmark(
             &values,
+            measure_every,
             || SplaySet::new(cmp_splay_tree),
             |set, x| { set.insert(x); },
             |set| set.len(),
@@ -170,40 +179,54 @@ fn run_fill_benchmarks() {
     let fill_b_tree = |values: &[f64]| {
         generic_fill_benchmark(
             &values,
+            measure_every,
             || BTreeSet::new(),
             |set, x| { set.insert(FloatWrapper(x)); },
             |set| set.len(),
         )
     };
 
-    let benchmarks: Vec<Benchmark> = vec![
-        Benchmark {
-            name: "SplayTree".to_string(),
-            func: &fill_splay_tree,
-        },
-        Benchmark {
-            name: "BTree".to_string(),
-            func: &fill_b_tree,
-        },
-        Benchmark {
-            name: "ArrayStump".to_string(),
-            func: &fill_array_tree,
-        },
-    ];
+    for run in 0..=3 {
+        let benchmarks: Vec<Benchmark> = vec![
+            Benchmark {
+                run,
+                name: "SplayTree".to_string(),
+                func: &fill_splay_tree,
+            },
+            Benchmark {
+                run,
+                name: "BTree".to_string(),
+                func: &fill_b_tree,
+            },
+            Benchmark {
+                run,
+                name: "ArrayStump".to_string(),
+                func: &fill_array_tree,
+            },
+        ];
+        let benchmarks = helpers::shuffle(&benchmarks);
 
-    for benchmark in benchmarks {
-        println!("Running benchmark: {}", benchmark.name);
-        let n = 1000000;
         let values = gen_rand_values(n);
         assert_eq!(values.len(), n);
 
-        let measurements = (benchmark.func)(&values);
+        for benchmark in benchmarks {
+            println!("Running benchmark: {} / {}", benchmark.name, benchmark.run);
 
-        let iters: Vec<_> = measurements.iter().map(|i_t| i_t.0).collect();
-        let times: Vec<_> = measurements.iter().map(|i_t| i_t.1).collect();
+            let measurements = (benchmark.func)(&values);
 
-        helpers::export_elapsed_times(&benchmark.name, &format!("results/fill_avg_{}.json", benchmark.name), &iters, &times);
-        //assert_eq!(len, n)
+            let iters: Vec<_> = measurements.iter().map(|i_t| i_t.0).collect();
+            let times: Vec<_> = measurements.iter().map(|i_t| i_t.1).collect();
+
+            if run > 0 {
+                helpers::export_elapsed_times(
+                    &benchmark.name,
+                    benchmark.run,
+                    &format!("results/fill_avg_{}_{}.json", benchmark.name, benchmark.run),
+                    &iters,
+                    &times,
+                );
+            }
+        }
     }
 
     helpers::call_plots();
