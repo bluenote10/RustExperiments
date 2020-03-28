@@ -1,23 +1,5 @@
-[package]
-name = "sorted_slot_array"
-version = "0.1.0"
-authors = ["Fabian Keller <github.100.fkeller@spamgourmet.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-
-rand = "0.7.3"
-pretty_assertions = "0.6"
-# ordered-float = "1.0"
-serde_json = { version = "1.0.44", features = ["arbitrary_precision"] }
-
-[dev-dependencies]
-
-criterion = "0.3"
-#rand = "0.7.3"
-
-[[bench]]
-name = "benchmarks"
-harness = false
+[workspace]
+members = [
+    "lib",
+    "benchmarks",
+]
