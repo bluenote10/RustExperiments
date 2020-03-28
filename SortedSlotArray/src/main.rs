@@ -151,7 +151,7 @@ fn run_fill_benchmarks() {
     let fill_array_tree = |values: &[f64]| {
         generic_fill_benchmark(
             &values,
-            || ArrayTree::new(cmp_array_tree, 64),
+            || ArrayTree::new(cmp_array_tree, 512),
             |set, x| { set.insert(x); },
             |set| set.len(),
         )

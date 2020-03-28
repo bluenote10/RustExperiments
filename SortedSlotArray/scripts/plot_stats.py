@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 def main():
     data = json.load(open("results/fill_stats.json"))
 
-    fig, axes = plt.subplots(3, 1, figsize=(16, 12), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(16, 8), sharex=True)
 
     times = np.array(data["times"])
     fill_ratio = np.array(data["fill_ratio"])

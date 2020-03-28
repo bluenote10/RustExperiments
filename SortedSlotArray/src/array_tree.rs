@@ -6,6 +6,7 @@ where
 {
     comparator: C,
     data: Vec<Vec<T>>,
+    init_capacity: u16,
     capacity: u16,
     num_elements: usize,
 }
@@ -15,12 +16,13 @@ where
     C: Fn(&T, &T) -> Ordering,
     T: Clone + std::fmt::Debug,
 {
-    pub fn new(comparator: C, capacity: u16) -> ArrayTree<T, C> {
-        let data = Vec::with_capacity(capacity as usize);
+    pub fn new(comparator: C, init_capacity: u16) -> ArrayTree<T, C> {
+        let data = Vec::with_capacity(init_capacity as usize);
         ArrayTree {
             comparator,
             data,
-            capacity,
+            init_capacity,
+            capacity: 8,
             num_elements: 0,
         }
     }
@@ -97,6 +99,11 @@ where
         }
 
         self.num_elements += 1;
+
+        if self.data.len() > self.capacity as usize * 5 {
+            self.capacity *= 2;
+        }
+
         true
     }
 
@@ -181,7 +188,8 @@ where
     }
 
     fn new_block(&self, t: T) -> Vec<T> {
-        let mut block = Vec::with_capacity(self.capacity as usize);
+        let capacity = self.capacity.max(self.init_capacity);
+        let mut block = Vec::with_capacity(capacity as usize);
         block.push(t);
         block
     }
@@ -214,7 +222,8 @@ where
     while r > l {
         let mid = l + (r - l) / 2;
 
-        let mid_el = &data[mid];
+        let mid_el = unsafe { &data.get_unchecked(mid) };
+        //let mid_el = &data[mid];
         // println!("{} {} {} {:?}", l, r, mid, mid_el);
 
         let cmp = f(mid_el);
@@ -271,6 +280,7 @@ mod test {
             let num_elements = data.iter().map(|block| block.len()).sum();
             ArrayTree {
                 comparator: int_comparator,
+                init_capacity: 64,
                 capacity: $capacity,
                 data: $data,
                 num_elements,
