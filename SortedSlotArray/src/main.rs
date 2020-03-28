@@ -154,6 +154,7 @@ fn run_fill_benchmarks() {
 
     let n = 1000000;
     let measure_every = 25;
+    let num_runs = 3;
 
     let fill_array_tree = |values: &[f64]| {
         generic_fill_benchmark(
@@ -186,7 +187,7 @@ fn run_fill_benchmarks() {
         )
     };
 
-    for run in 0..=3 {
+    for run in 0..=num_runs {
         let benchmarks: Vec<Benchmark> = vec![
             Benchmark {
                 run,

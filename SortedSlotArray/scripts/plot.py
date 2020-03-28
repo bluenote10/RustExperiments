@@ -64,7 +64,7 @@ def main():
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
-    fig.text(0.8, 0.93, "Total times [ms]", fontsize=9, family="monospace", weight="bold")
+    fig.text(0.78, 0.93, "Total times [ms]", fontsize=9, family="monospace", weight="bold")
     y_text = 0.9
 
     for i, entry in enumerate(data):
@@ -80,8 +80,8 @@ def main():
 
             mean = stats[name].mean() * 1000
             std = stats[name].std() * 1000
-            fig.text(0.80, y_text, name, fontsize=9, family="monospace")
-            fig.text(0.88, y_text, "{:5.1f}".format(mean), fontsize=9, family="monospace")
+            fig.text(0.78, y_text, name, fontsize=9, family="monospace")
+            fig.text(0.88, y_text, "{:5.3f}".format(mean), fontsize=9, family="monospace")
             fig.text(0.93, y_text, "+/- {:5.3f}".format(std), fontsize=9, family="monospace")
             y_text -= 0.03
         else:
