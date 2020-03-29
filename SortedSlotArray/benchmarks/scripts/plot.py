@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- encoding: utf-8
+
+from __future__ import print_function, division, unicode_literals
 
 import argparse
 import glob
@@ -8,6 +11,7 @@ from itertools import cycle
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 def parse_args():
     parser = argparse.ArgumentParser("Plot tool")
@@ -44,6 +48,32 @@ def compute_stats(keys, data):
     return stats
 
 
+class ZBiasFreePlotter(object):
+    def __init__(self):
+        self.plot_calls = []
+
+    def add_plot(self, f, xs, ys, *args, **kwargs):
+        self.plot_calls.append((f, xs, ys, args, kwargs))
+
+    def draw_plots(self, chunk_size=512):
+        scheduled_calls = []
+        for f, xs, ys, args, kwargs in self.plot_calls:
+            assert(len(xs) == len(ys))
+            index = np.arange(len(xs))
+            np.random.shuffle(index)
+            index_blocks = [index[i:i+chunk_size] for i in np.arange(len(index))[::chunk_size]]
+            for i, index_block in enumerate(index_blocks):
+                # Only attach a label for one of the chunks
+                if i != 0 and kwargs.get("label") is not None:
+                    kwargs = kwargs.copy()
+                    kwargs["label"] = None
+                scheduled_calls.append((f, xs[index_block], ys[index_block], args, kwargs))
+
+        np.random.shuffle(scheduled_calls)
+
+        for f, xs, ys, args, kwargs in scheduled_calls:
+            f(xs, ys, *args, **kwargs)
+
 
 def main():
     args = parse_args()
@@ -63,6 +93,8 @@ def main():
     # import IPython; IPython.embed()
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    bias_free_plotter1 = ZBiasFreePlotter()
+    bias_free_plotter2 = ZBiasFreePlotter()
 
     fig.text(0.78, 0.93, "Total times [ms]", fontsize=9, family="monospace", weight="bold")
     y_text = 0.9
@@ -70,7 +102,7 @@ def main():
     for i, entry in enumerate(data):
         name = entry["name"]
         iters = np.array(entry["iters"])
-        times = np.array(entry["times"])
+        times = np.array(entry["times"]) * 1000
 
         color = color_map[name]
         is_primary = entry["run"] == 1
@@ -80,9 +112,9 @@ def main():
 
             mean = stats[name].mean() * 1000
             std = stats[name].std() * 1000
-            fig.text(0.78, y_text, name, fontsize=9, family="monospace")
-            fig.text(0.88, y_text, "{:5.3f}".format(mean), fontsize=9, family="monospace")
-            fig.text(0.93, y_text, "+/- {:5.3f}".format(std), fontsize=9, family="monospace")
+            fig.text(0.77, y_text, name, fontsize=9, family="monospace")
+            fig.text(0.87, y_text, "{:7.3f}".format(mean), fontsize=9, family="monospace")
+            fig.text(0.93, y_text, "± {:6.3f}".format(std), fontsize=9, family="monospace")
             y_text -= 0.03
         else:
             label = None
@@ -91,21 +123,40 @@ def main():
             iters, times, "-",
             c=color, alpha=0.5, label=label,
         )
-        axes[1].plot(
-            iters[1:], times[1:] - times[:-1],
-            "o", c=color, ms=0.4, alpha=0.8, label=label,
-        )
+        if False:
+            axes[1].plot(
+                iters[1:], times[1:] - times[:-1],
+                "o", c=color, ms=0.4, alpha=0.8, label=label,
+            )
+        else:
+            bias_free_plotter1.add_plot(
+                axes[1].plot, iters[1:], times[1:] - times[:-1],
+                ",", c=color, ms=1, alpha=1, label=label
+            )
+            bias_free_plotter2.add_plot(
+                axes[1].plot, iters[1:], times[1:] - times[:-1],
+                "o", c=color, ms=4, alpha=0.007,
+            )
 
-    axes[0].legend(loc="best")
-    axes[1].legend(loc="best")
+    bias_free_plotter1.draw_plots()
+    bias_free_plotter2.draw_plots()
 
-    axes[1].set_yscale('log')
+    axes[0].legend(loc="best", prop={'size': 9})
+    axes[0].grid(color="#DDDDDD")
+    axes[1].grid(color="#DDDDDD")
+
+    axes[0].set_title("Total time elapsed", fontsize=10)
+    axes[1].set_title("Delta times", fontsize=10)
+
+    axes[0].set_ylabel("Time [ms]")
+    axes[1].set_ylabel("Time [ms]")
+    axes[1].set_xlabel("Operations")
+    axes[1].set_yscale("log")
 
     fig.tight_layout()
     plt.subplots_adjust(right=0.75)
 
     plt.show()
-    #import IPython; IPython.embed()
 
 
 if __name__ == "__main__":
