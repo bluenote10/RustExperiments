@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::iter;
 
-pub struct SortedArray<T, C>
+pub struct SlotArray<T, C>
 where
     C: Fn(&T, &T) -> Ordering,
 {
@@ -11,13 +11,14 @@ where
     num_elements: usize,
 }
 
-impl<T, C> SortedArray<T, C>
+#[allow(dead_code)]
+impl<T, C> SlotArray<T, C>
 where
     C: Fn(&T, &T) -> Ordering,
     T: Clone + std::fmt::Debug,
 {
-    pub fn new(comparator: C, initial_capacity: usize, spacing: usize) -> SortedArray<T, C> {
-        SortedArray {
+    pub fn new(comparator: C, initial_capacity: usize, spacing: usize) -> SlotArray<T, C> {
+        SlotArray {
             spacing,
             comparator,
             data_raw: iter::repeat(None).take(initial_capacity * (spacing + 1)).collect(),
@@ -69,13 +70,8 @@ where
 
 }
 
-pub enum BinarySearchResult {
-    Match{idx: usize},
-    Slot{idx: usize},
-    Err
-}
 
-pub fn binary_search_by<T, F>(data: &[Option<T>], mut f: F) -> (usize, bool) // BinarySearchResult
+pub fn binary_search_by<T, F>(data: &[Option<T>], mut f: F) -> (usize, bool)
 where
     F: FnMut(&T) -> Ordering,
     T: std::fmt::Debug,
@@ -296,7 +292,7 @@ mod test {
     use rand::{Rng, SeedableRng};
     use rand::rngs::StdRng;
 
-    pub fn binary_search_by_reference<T, F>(data: &[Option<T>], mut f: F) -> (usize, bool) // BinarySearchResult
+    pub fn binary_search_by_reference<T, F>(data: &[Option<T>], mut f: F) -> (usize, bool)
     where
         F: FnMut(&T) -> Ordering,
     {

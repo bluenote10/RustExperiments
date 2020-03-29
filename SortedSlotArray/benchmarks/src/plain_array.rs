@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-pub struct VecSet<T, C>
+pub struct PlainArray<T, C>
 where
     C: Fn(&T, &T) -> Ordering,
 {
@@ -8,13 +8,14 @@ where
     data: Vec<T>,
 }
 
-impl<T, C> VecSet<T, C>
+#[allow(dead_code)]
+impl<T, C> PlainArray<T, C>
 where
     C: Fn(&T, &T) -> Ordering,
     T: Clone + std::fmt::Debug,
 {
-    pub fn new(comparator: C, capacity: usize) -> VecSet<T, C> {
-        VecSet {
+    pub fn new(comparator: C, capacity: usize) -> PlainArray<T, C> {
+        PlainArray {
             comparator,
             data: Vec::with_capacity(capacity),
         }

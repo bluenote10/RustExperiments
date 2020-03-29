@@ -1,19 +1,21 @@
 extern crate array_stump;
 
 mod helpers;
-mod slot_array;
-mod vec_set;
+
 mod splay;
+mod slot_array;
+mod plain_array;
 
 use array_stump::ArrayTree;
 
 use std::cmp::{Eq, Ord, Ordering};
 use rand::Rng;
 
-use slot_array::SortedArray;
 use splay::SplaySet;
-use vec_set::VecSet;
 use std::collections::BTreeSet;
+
+use slot_array::SlotArray;
+use plain_array::PlainArray;
 // use ordered_float::OrderedFloat;
 
 use std::time::{Duration, Instant};
@@ -34,6 +36,7 @@ macro_rules! create_cmp {
             a.exp().partial_cmp(&b.exp()).unwrap()
         }
 
+        #[allow(dead_code)]
         fn $get() -> u64 {
             unsafe {
                 $count
@@ -81,6 +84,8 @@ fn gen_rand_values(n: usize) -> Vec<f64> {
 
 create_cmp!(cmp_array_tree, get_num_calls_array_tree, NUM_CALLS_ARRAY_TREE);
 create_cmp!(cmp_splay_tree, get_num_calls_splay_tree, NUM_CALLS_SPLAY_TREE);
+create_cmp!(cmp_slot_array, get_num_calls_slot_array, NUM_CALLS_SLOT_ARRAY);
+create_cmp!(cmp_plain_array, get_num_calls_plain_array, NUM_CALLS_PLAIN_ARRAY);
 
 
 fn generic_fill_benchmark<T, F1, F2, F3>(values: &[f64], measure_every: i32, init: F1, insert: F2, get_len: F3) -> Vec<(usize, f64)>
@@ -159,6 +164,7 @@ fn run_fill_benchmarks() {
     let n = 1000000;
     let measure_every = 25;
     let num_runs = 3;
+    let all_combatants = false;
 
     let fill_array_tree = |values: &[f64]| {
         generic_fill_benchmark(
@@ -191,8 +197,28 @@ fn run_fill_benchmarks() {
         )
     };
 
+    let fill_slot_array = |values: &[f64]| {
+        generic_fill_benchmark(
+            &values,
+            measure_every,
+            || SlotArray::new(cmp_slot_array, 20, 4),
+            |set, x| { set.insert(x); },
+            |set| set.len(),
+        )
+    };
+
+    let fill_plain_array = |values: &[f64]| {
+        generic_fill_benchmark(
+            &values,
+            measure_every,
+            || PlainArray::new(cmp_plain_array, 1024),
+            |set, x| { set.insert(x); },
+            |set| set.len(),
+        )
+    };
+
     for run in 0..=num_runs {
-        let benchmarks: Vec<Benchmark> = vec![
+        let mut benchmarks: Vec<Benchmark> = vec![
             Benchmark {
                 run,
                 name: "SplayTree".to_string(),
@@ -209,6 +235,20 @@ fn run_fill_benchmarks() {
                 func: &fill_array_tree,
             },
         ];
+        if all_combatants {
+            benchmarks.extend(vec![
+                Benchmark {
+                    run,
+                    name: "SlotArray".to_string(),
+                    func: &fill_slot_array,
+                },
+                Benchmark {
+                    run,
+                    name: "PlainArray".to_string(),
+                    func: &fill_plain_array,
+                },
+            ])
+        }
         let benchmarks = helpers::shuffle(&benchmarks);
 
         let values = gen_rand_values(n);
