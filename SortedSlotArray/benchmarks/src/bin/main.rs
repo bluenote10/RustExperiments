@@ -1,80 +1,21 @@
+extern crate array_stump_benchmarks;
 extern crate array_stump;
 
-mod helpers;
+use array_stump_benchmarks::create_cmp;
+use array_stump_benchmarks::helpers;
+use array_stump_benchmarks::helpers::{FloatWrapper, get_num_calls_b_tree};
 
-mod splay;
-mod slot_array;
-mod plain_array;
-
-use array_stump::ArrayTree;
-
-use std::cmp::{Eq, Ord, Ordering};
-use rand::Rng;
-
-use splay::SplaySet;
+use array_stump::ArrayStump;
 use std::collections::BTreeSet;
+use array_stump_benchmarks::alternatives::splay::SplaySet;
+use array_stump_benchmarks::alternatives::slot_array::SlotArray;
+use array_stump_benchmarks::alternatives::plain_array::PlainArray;
 
-use slot_array::SlotArray;
-use plain_array::PlainArray;
-// use ordered_float::OrderedFloat;
-
-use std::time::{Duration, Instant};
-
+use std::time::Instant;
+use rand::Rng;
 use pretty_assertions::assert_eq;
 
 
-
-macro_rules! create_cmp {
-    ($func:ident, $get:ident, $count:ident) => {
-        static mut $count: u64 = 0;
-
-        #[inline]
-        fn $func(a: &f64, b: &f64) -> std::cmp::Ordering {
-            unsafe {
-                $count += 1;
-            }
-            a.exp().partial_cmp(&b.exp()).unwrap()
-        }
-
-        #[allow(dead_code)]
-        fn $get() -> u64 {
-            unsafe {
-                $count
-            }
-        }
-    };
-}
-
-#[derive(Debug)]
-struct FloatWrapper(f64);
-
-impl Eq for FloatWrapper {}
-
-impl PartialEq for FloatWrapper {
-    fn eq(&self, other: &Self) -> bool {
-        panic!("eq called");
-        if self.0.is_nan() && other.0.is_nan() {
-            true
-        } else {
-            self.0 == other.0
-        }
-    }
-}
-
-impl PartialOrd for FloatWrapper {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        panic!("partial_cmp called");
-        Some(self.cmp(other))
-    }
-}
-
-create_cmp!(cmp_b_tree, get_num_calls_b_tree, NUM_CALLS_B_TREE);
-
-impl Ord for FloatWrapper {
-    fn cmp(&self, other: &Self) -> Ordering {
-        cmp_b_tree(&self.0, &other.0)
-    }
-}
 
 fn gen_rand_values(n: usize) -> Vec<f64> {
     let mut rng = rand::thread_rng();
@@ -170,7 +111,7 @@ fn run_fill_benchmarks() {
         generic_fill_benchmark(
             &values,
             measure_every,
-            || ArrayTree::new(cmp_array_tree, 512),
+            || ArrayStump::new(cmp_array_tree, 512),
             |set, x| { set.insert(x); },
             |set| set.len(),
         )
@@ -221,6 +162,11 @@ fn run_fill_benchmarks() {
         let mut benchmarks: Vec<Benchmark> = vec![
             Benchmark {
                 run,
+                name: "ArrayStump".to_string(),
+                func: &fill_array_tree,
+            },
+            Benchmark {
+                run,
                 name: "SplayTree".to_string(),
                 func: &fill_splay_tree,
             },
@@ -228,11 +174,6 @@ fn run_fill_benchmarks() {
                 run,
                 name: "BTree".to_string(),
                 func: &fill_b_tree,
-            },
-            Benchmark {
-                run,
-                name: "ArrayStump".to_string(),
-                func: &fill_array_tree,
             },
         ];
         if all_combatants {
@@ -282,7 +223,7 @@ fn run_fill_statistics() {
     let n = 1000000;
     let values = gen_rand_values(n);
 
-    let mut set = ArrayTree::new(cmp_array_tree, 256);
+    let mut set = ArrayStump::new(cmp_array_tree, 256);
 
     let mut iters = Vec::new();
     let mut times = Vec::new();

@@ -1,4 +1,5 @@
 extern crate sorted_slot_array;
+extern crate array_stump_benchmarks;
 
 use rand::Rng;
 

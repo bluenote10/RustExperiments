@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fs::{create_dir_all, File};
 use std::path::Path;
 use serde_json::json;
@@ -6,6 +7,54 @@ use std::process::{Command, Stdio};
 
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+
+#[macro_export]
+macro_rules! create_cmp {
+    ($func:ident, $get:ident, $count:ident) => {
+        static mut $count: u64 = 0;
+
+        #[inline]
+        fn $func(a: &f64, b: &f64) -> std::cmp::Ordering {
+            unsafe {
+                $count += 1;
+            }
+            a.exp().partial_cmp(&b.exp()).unwrap()
+        }
+
+        #[allow(dead_code)]
+        pub fn $get() -> u64 {
+            unsafe {
+                $count
+            }
+        }
+    };
+}
+
+
+#[derive(Debug)]
+pub struct FloatWrapper(pub f64);
+
+impl Eq for FloatWrapper {}
+
+impl PartialEq for FloatWrapper {
+    fn eq(&self, _other: &Self) -> bool {
+        unimplemented!()
+    }
+}
+
+impl PartialOrd for FloatWrapper {
+    fn partial_cmp(&self, _other: &Self) -> Option<Ordering> {
+        unimplemented!()
+    }
+}
+
+create_cmp!(cmp_b_tree, get_num_calls_b_tree, NUM_CALLS_B_TREE);
+
+impl Ord for FloatWrapper {
+    fn cmp(&self, other: &Self) -> Ordering {
+        cmp_b_tree(&self.0, &other.0)
+    }
+}
 
 
 pub fn export_elapsed_times(name: &str, run: i32, filename: &str, iters: &[usize], times: &[f64]) {
@@ -25,6 +74,7 @@ pub fn export_elapsed_times(name: &str, run: i32, filename: &str, iters: &[usize
     serde_json::to_writer_pretty(f, &json_data).expect("Unable to write json file.");
 }
 
+
 pub fn call_plots() {
     let script_path = Path::new(file!()).to_path_buf()
         .canonicalize().unwrap()
@@ -41,6 +91,7 @@ pub fn call_plots() {
 
     child.wait().expect("Failed to wait for child");
 }
+
 
 pub fn export_stats(iters: &[usize], times: &[f64], fill_ratio: &[f64], num_blocks: &[usize], capacity: &[u16]) {
 
