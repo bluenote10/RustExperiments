@@ -1,5 +1,6 @@
 mod alternative_iterators;
 mod alternative_index_trait;
+mod alternative_custom_trait;
 
 fn compute(_num_to_generate: usize, _in_buffer: &[&[f32]], _out_buffer: &mut[&mut[f32]]) {
     // ...
