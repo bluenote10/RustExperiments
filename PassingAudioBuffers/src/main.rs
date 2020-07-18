@@ -1,3 +1,5 @@
+mod alternative_iterators;
+mod alternative_index_trait;
 
 fn compute(_num_to_generate: usize, _in_buffer: &[&[f32]], _out_buffer: &mut[&mut[f32]]) {
     // ...
@@ -163,5 +165,10 @@ fn main() {
         }
     }
 
+    // Maybe some of the "allocate vec on stack" approaches could solve it?
+    // - https://stackoverflow.com/questions/29239586/how-can-i-create-a-stack-allocated-vector-like-container
+    // - http://troubles.md/improving-smallvec/
+    // - https://llogiq.github.io/2018/09/13/smallvec.html
+    // - https://www.reddit.com/r/rust/comments/fshuhk/introducing_tinyvec_100_safe_alternative_to/
 
 }
