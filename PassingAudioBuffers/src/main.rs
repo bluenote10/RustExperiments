@@ -2,6 +2,24 @@ mod alternative_iterators;
 mod alternative_index_trait;
 mod alternative_custom_trait;
 
+// That was the plan, but probably the investigations below show that this cannot work.
+macro_rules! convert_to_slices {
+    ($buffer:expr) => {{
+        let length = $buffer.len();
+        if length == 0 {
+            &[]
+        } else if length == 1 {
+            &[&$buffer[0]]
+        } else if length == 2 {
+            &[&$buffer[0], &$buffer[1]]
+        } else {
+            //$buffer.iter().map(|buffer| buffer.as_slice()).collect::<Vec<&[FloatType]>>().as_slice()
+            &[]
+        }
+    }}
+}
+
+
 fn compute(_num_to_generate: usize, _in_buffer: &[&[f32]], _out_buffer: &mut[&mut[f32]]) {
     // ...
 }
