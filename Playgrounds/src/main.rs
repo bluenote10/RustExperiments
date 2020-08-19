@@ -4,4 +4,6 @@ mod inner_mut;
 
 fn main() {
     println!("Hello, world!");
+
+    inner_mut::test();
 }
