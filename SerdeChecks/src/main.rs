@@ -29,7 +29,7 @@ fn write_as_pretty_json(seq: &Sequence) -> u64 {
 }
 
 fn write_as_msgpack_compact(seq: &Sequence) -> u64 {
-    let path = Path::new("/tmp/test.json");
+    let path = Path::new("/tmp/test.compact.msgpack");
     let data = rmp_serde::encode::to_vec(seq).unwrap();
     {
         File::create(path).unwrap().write_all(&data).unwrap();
@@ -38,7 +38,7 @@ fn write_as_msgpack_compact(seq: &Sequence) -> u64 {
 }
 
 fn write_as_msgpack_named(seq: &Sequence) -> u64 {
-    let path = Path::new("/tmp/test.json");
+    let path = Path::new("/tmp/test.named.msgpack");
     let data = rmp_serde::encode::to_vec_named(seq).unwrap();
     {
         File::create(path).unwrap().write_all(&data).unwrap();

@@ -39,6 +39,7 @@ pub struct Note {
     pub fret: i32,
     #[serde(default)]
     // as a field attribute, this means the individual field is initialized from Default::default() if it is missing.
+    #[serde(skip_serializing_if = "is_default_note_effects")]
     pub effects: NoteEffects,
 }
 
@@ -46,8 +47,11 @@ pub struct Note {
 #[serde(rename_all = "camelCase")]
 #[serde(default)] // as a container attribute, this means that missing fields are taken from the struct's Default::default().
 pub struct NoteEffects {
+    #[serde(skip_serializing_if = "bool_is_false")]
     pub dead_note: bool,
+    #[serde(skip_serializing_if = "bool_is_false")]
     pub vibrato: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bend_data: Option<BendData>,
 }
 
@@ -72,4 +76,12 @@ pub struct BendData {
 pub struct BendPoint {
     pub bend: f32,
     pub pos: f64,
+}
+
+fn bool_is_false(x: &bool) -> bool {
+    !(*x)
+}
+
+fn is_default_note_effects(note_effects: &NoteEffects) -> bool {
+    *note_effects == NoteEffects::default()
 }
