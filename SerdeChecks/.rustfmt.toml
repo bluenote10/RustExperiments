@@ -1,0 +1,5 @@
+# For all options see:
+# https://rust-lang.github.io/rustfmt/?version=master&search=
+
+# stable options
+max_width = 100
