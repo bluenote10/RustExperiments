@@ -42,12 +42,6 @@ pub struct Note {
     pub effects: NoteEffects,
 }
 
-impl Note {
-    pub fn e(&self) -> f64 {
-        self.s + self.d
-    }
-}
-
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[serde(default)] // as a container attribute, this means that missing fields are taken from the struct's Default::default().
