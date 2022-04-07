@@ -18,13 +18,17 @@ fn get_file_size(path: &Path) -> u64 {
 
 fn write_as_json(seq: &Sequence) -> u64 {
     let path = Path::new("/tmp/test.json");
-    serde_json::to_writer(File::create(path).unwrap(), seq).unwrap();
+    {
+        serde_json::to_writer(File::create(path).unwrap(), seq).unwrap();
+    }
     get_file_size(path)
 }
 
 fn write_as_pretty_json(seq: &Sequence) -> u64 {
     let path = Path::new("/tmp/test.pretty.json");
-    serde_json::to_writer_pretty(File::create(path).unwrap(), seq).unwrap();
+    {
+        serde_json::to_writer_pretty(File::create(path).unwrap(), seq).unwrap();
+    }
     get_file_size(path)
 }
 
@@ -55,6 +59,14 @@ fn write_as_bincode(seq: &Sequence) -> u64 {
     get_file_size(path)
 }
 
+fn write_as_cbor(seq: &Sequence) -> u64 {
+    let path = Path::new("/tmp/test.cbor");
+    {
+        ciborium::ser::into_writer(seq, File::create(path).unwrap()).unwrap();
+    }
+    get_file_size(path)
+}
+
 // rmp_serde::encode::to_vec
 
 fn main() {
@@ -69,6 +81,7 @@ fn main() {
     let len_msgpack_compact = write_as_msgpack_compact(&seq);
     let len_msgpack_named = write_as_msgpack_named(&seq);
     let len_bincode = write_as_bincode(&seq);
+    let len_cbor = write_as_cbor(&seq);
 
     let get_ref_size = |len: u64| len as f64 / len_reference as f64;
 
@@ -78,7 +91,8 @@ fn main() {
         ("pretty.json", len_pretty_json),
         ("msgpack (compact)", len_msgpack_compact),
         ("msgpack (named)", len_msgpack_named),
-        ("len_bincode", len_bincode),
+        ("bincode", len_bincode),
+        ("cbor", len_cbor),
     ];
 
     for (name, len) in entries {
