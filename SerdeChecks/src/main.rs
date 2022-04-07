@@ -46,6 +46,15 @@ fn write_as_msgpack_named(seq: &Sequence) -> u64 {
     get_file_size(path)
 }
 
+fn write_as_bincode(seq: &Sequence) -> u64 {
+    let path = Path::new("/tmp/test.bincode");
+    let data = bincode::serialize(seq).unwrap();
+    {
+        File::create(path).unwrap().write_all(&data).unwrap();
+    }
+    get_file_size(path)
+}
+
 // rmp_serde::encode::to_vec
 
 fn main() {
@@ -53,37 +62,31 @@ fn main() {
     let seq = load_sequence_from_file(path);
 
     let len_reference = 21749;
+
     let len_orig = get_file_size(path);
     let len_json = write_as_json(&seq);
     let len_pretty_json = write_as_pretty_json(&seq);
     let len_msgpack_compact = write_as_msgpack_compact(&seq);
     let len_msgpack_named = write_as_msgpack_named(&seq);
+    let len_bincode = write_as_bincode(&seq);
 
     let get_ref_size = |len: u64| len as f64 / len_reference as f64;
 
-    println!(
-        "orig:              {:10} {:8.3}",
-        len_orig,
-        get_ref_size(len_orig)
-    );
-    println!(
-        "json:              {:10} {:8.3}",
-        len_json,
-        get_ref_size(len_json)
-    );
-    println!(
-        "pretty.json:       {:10} {:8.3}",
-        len_pretty_json,
-        get_ref_size(len_pretty_json)
-    );
-    println!(
-        "msgpack (compact): {:10} {:8.3}",
-        len_msgpack_compact,
-        get_ref_size(len_msgpack_compact)
-    );
-    println!(
-        "msgpack (named):   {:10} {:8.3}",
-        len_msgpack_named,
-        get_ref_size(len_msgpack_named)
-    );
+    let entries = [
+        ("orig", len_orig),
+        ("json", len_json),
+        ("pretty.json", len_pretty_json),
+        ("msgpack (compact)", len_msgpack_compact),
+        ("msgpack (named)", len_msgpack_named),
+        ("len_bincode", len_bincode),
+    ];
+
+    for (name, len) in entries {
+        println!(
+            "{:<20} {:10} {:8.3}",
+            name.to_owned() + ":",
+            len,
+            get_ref_size(len)
+        );
+    }
 }
