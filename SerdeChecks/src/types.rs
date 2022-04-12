@@ -34,9 +34,9 @@ pub struct Tuning {
 pub struct Note {
     pub s: f64,
     pub d: f64,
-    pub pitch: i32,
-    pub string: i32,
-    pub fret: i32,
+    pub pitch: u8,
+    pub string: u8,
+    pub fret: u8,
     #[serde(default)]
     // as a field attribute, this means the individual field is initialized from Default::default() if it is missing.
     #[serde(skip_serializing_if = "is_default_note_effects")]

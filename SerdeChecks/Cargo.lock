@@ -175,6 +175,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_bare"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51c55386eed0f1ae957b091dc2ca8122f287b60c79c774cbe3d5f2b69fded660"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_checks"
 version = "0.1.0"
 dependencies = [
@@ -183,6 +192,7 @@ dependencies = [
  "flate2",
  "rmp-serde",
  "serde",
+ "serde_bare",
  "serde_json",
 ]
 

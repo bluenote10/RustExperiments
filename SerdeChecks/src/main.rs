@@ -118,6 +118,14 @@ fn write_as_cbor(seq: &Sequence) -> FileSize {
     get_file_size(path)
 }
 
+fn write_as_bare(seq: &Sequence) -> FileSize {
+    let path = Path::new("/tmp/test.bare");
+    {
+        serde_bare::to_writer(File::create(path).unwrap(), seq).unwrap();
+    }
+    get_file_size(path)
+}
+
 fn main() {
     let path = Path::new("test.json");
     let seq = load_sequence_from_file(path);
@@ -129,6 +137,7 @@ fn main() {
     let size_msgpack_named = write_as_msgpack_named(&seq);
     let size_bincode = write_as_bincode(&seq);
     let size_cbor = write_as_cbor(&seq);
+    let size_bare = write_as_bare(&seq);
 
     let entries = [
         ("orig", size_orig),
@@ -138,6 +147,7 @@ fn main() {
         ("msgpack (named)", size_msgpack_named),
         ("bincode", size_bincode),
         ("cbor", size_cbor),
+        ("bare", size_bare),
     ];
 
     let size_reference = 21749;
