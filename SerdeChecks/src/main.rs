@@ -1,3 +1,4 @@
+mod custom_file_format;
 mod types;
 
 use std::fs::File;
@@ -7,6 +8,7 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+use custom_file_format::to_vec;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
@@ -126,6 +128,15 @@ fn write_as_bare(seq: &Sequence) -> FileSize {
     get_file_size(path)
 }
 
+fn write_as_custom(seq: &Sequence) -> FileSize {
+    let path = Path::new("/tmp/test.custom");
+    let data = to_vec(seq).unwrap();
+    {
+        File::create(path).unwrap().write_all(&data).unwrap();
+    }
+    get_file_size(path)
+}
+
 fn main() {
     let path = Path::new("test.json");
     let seq = load_sequence_from_file(path);
@@ -138,6 +149,7 @@ fn main() {
     let size_bincode = write_as_bincode(&seq);
     let size_cbor = write_as_cbor(&seq);
     let size_bare = write_as_bare(&seq);
+    let size_custom = write_as_custom(&seq);
 
     let entries = [
         ("orig", size_orig),
@@ -148,6 +160,7 @@ fn main() {
         ("bincode", size_bincode),
         ("cbor", size_cbor),
         ("bare", size_bare),
+        ("custom", size_custom),
     ];
 
     let size_reference = 21749;

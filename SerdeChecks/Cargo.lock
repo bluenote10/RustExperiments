@@ -190,6 +190,7 @@ dependencies = [
  "bincode",
  "ciborium",
  "flate2",
+ "num-traits",
  "rmp-serde",
  "serde",
  "serde_bare",
