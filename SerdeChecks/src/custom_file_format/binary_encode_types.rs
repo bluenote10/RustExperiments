@@ -11,6 +11,7 @@ use crate::types::Track;
 use crate::types::Tuning;
 
 use super::binary_encode::BinaryEncode;
+// use super::uint::Uint;
 
 impl BinaryEncode for Sequence {
     fn encode<W>(&self, wr: &mut W) -> Result<()>

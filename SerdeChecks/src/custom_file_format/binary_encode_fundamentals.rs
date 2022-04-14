@@ -2,6 +2,7 @@ use std::io::Result;
 use std::io::Write;
 
 use super::binary_encode::BinaryEncode;
+use super::uint::Uint;
 
 impl BinaryEncode for bool {
     fn encode<W>(&self, wr: &mut W) -> Result<()>
@@ -132,7 +133,7 @@ impl BinaryEncode for str {
     where
         W: Write,
     {
-        self.len().encode(wr)?;
+        Uint(self.len() as u64).encode(wr)?;
         wr.write_all(self.as_bytes())?;
         Ok(())
     }
@@ -143,7 +144,7 @@ impl<T: BinaryEncode> BinaryEncode for [T] {
     where
         W: Write,
     {
-        self.len().encode(wr)?;
+        Uint(self.len() as u64).encode(wr)?;
         for x in self {
             x.encode(wr)?;
         }
@@ -196,20 +197,14 @@ mod test {
     #[test]
     fn test_string() {
         let s = "hello";
-        assert_eq!(
-            to_vec(s).unwrap(),
-            [5, 0, 0, 0, 0, 0, 0, 0, 104, 101, 108, 108, 111]
-        );
+        assert_eq!(to_vec(s).unwrap(), [5, 104, 101, 108, 108, 111]);
         let s = "ä";
-        assert_eq!(to_vec(s).unwrap(), [2, 0, 0, 0, 0, 0, 0, 0, 0xc3, 0xa4]);
+        assert_eq!(to_vec(s).unwrap(), [2, 0xc3, 0xa4]);
     }
 
     #[test]
     fn test_array() {
         let a: &[i16] = &[1, 2, 3];
-        assert_eq!(
-            to_vec(a).unwrap(),
-            [3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 3, 0]
-        );
+        assert_eq!(to_vec(a).unwrap(), [3, 1, 0, 2, 0, 3, 0]);
     }
 }
