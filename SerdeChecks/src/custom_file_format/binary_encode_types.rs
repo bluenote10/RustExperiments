@@ -11,7 +11,7 @@ use crate::types::Track;
 use crate::types::Tuning;
 
 use super::binary_encode::BinaryEncode;
-// use super::uint::Uint;
+use super::uint::Uint;
 
 impl BinaryEncode for Sequence {
     fn encode<W>(&self, wr: &mut W) -> Result<()>
@@ -64,8 +64,13 @@ impl BinaryEncode for Note {
     where
         W: Write,
     {
-        self.s.encode(wr)?;
-        self.d.encode(wr)?;
+        let (beat, quantized_offset) = split_in_beat_and_offset(self.s);
+        let quantized_duration = quantize_duration(self.d);
+        beat.encode(wr)?;
+        quantized_offset.encode(wr)?;
+        quantized_duration.encode(wr)?;
+        // self.s.encode(wr)?;
+        // self.d.encode(wr)?;
         self.pitch.encode(wr)?;
         self.string.encode(wr)?;
         self.fret.encode(wr)?;
@@ -105,4 +110,14 @@ impl BinaryEncode for BendPoint {
         self.pos.encode(wr)?;
         Ok(())
     }
+}
+
+fn split_in_beat_and_offset(t: f64) -> (Uint, Uint) {
+    let beat = Uint(t as u64);
+    let offset = quantize_duration(t - (beat.0 as f64));
+    (beat, offset)
+}
+
+fn quantize_duration(duration: f64) -> Uint {
+    Uint((duration * 960.0) as u64)
 }
