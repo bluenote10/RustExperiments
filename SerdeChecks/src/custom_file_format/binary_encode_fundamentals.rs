@@ -5,7 +5,7 @@ use super::binary_encode::BinaryEncode;
 use super::uint::Uint;
 
 impl BinaryEncode for bool {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -19,7 +19,7 @@ impl BinaryEncode for bool {
 }
 
 impl BinaryEncode for i8 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -29,7 +29,7 @@ impl BinaryEncode for i8 {
 }
 
 impl BinaryEncode for i16 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -39,7 +39,7 @@ impl BinaryEncode for i16 {
 }
 
 impl BinaryEncode for i32 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -49,7 +49,7 @@ impl BinaryEncode for i32 {
 }
 
 impl BinaryEncode for i64 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -59,7 +59,7 @@ impl BinaryEncode for i64 {
 }
 
 impl BinaryEncode for u8 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -69,7 +69,7 @@ impl BinaryEncode for u8 {
 }
 
 impl BinaryEncode for u16 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -79,7 +79,7 @@ impl BinaryEncode for u16 {
 }
 
 impl BinaryEncode for u32 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -89,7 +89,7 @@ impl BinaryEncode for u32 {
 }
 
 impl BinaryEncode for u64 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -99,7 +99,7 @@ impl BinaryEncode for u64 {
 }
 
 impl BinaryEncode for usize {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -109,7 +109,7 @@ impl BinaryEncode for usize {
 }
 
 impl BinaryEncode for f32 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -119,7 +119,7 @@ impl BinaryEncode for f32 {
 }
 
 impl BinaryEncode for f64 {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -129,38 +129,38 @@ impl BinaryEncode for f64 {
 }
 
 impl BinaryEncode for str {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
-        Uint(self.len() as u64).encode(wr)?;
+        Uint(self.len() as u64).encode(wr, context)?;
         wr.write_all(self.as_bytes())?;
         Ok(())
     }
 }
 
 impl<T: BinaryEncode> BinaryEncode for [T] {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
-        Uint(self.len() as u64).encode(wr)?;
+        Uint(self.len() as u64).encode(wr, context)?;
         for x in self {
-            x.encode(wr)?;
+            x.encode(wr, context)?;
         }
         Ok(())
     }
 }
 
 impl<T: BinaryEncode> BinaryEncode for Option<T> {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
         match self {
             Some(x) => {
                 wr.write_all(&[1])?;
-                x.encode(wr)?;
+                x.encode(wr, context)?;
             }
             None => {
                 wr.write_all(&[0])?;

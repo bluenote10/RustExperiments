@@ -6,12 +6,13 @@ where
     T: BinaryEncode + ?Sized,
 {
     let mut wr = Vec::with_capacity(128);
-    val.encode(&mut wr)?;
+    let context = ();
+    val.encode(&mut wr, &context)?;
     Ok(wr)
 }
 
 pub trait BinaryEncode {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write;
 }

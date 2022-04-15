@@ -13,10 +13,15 @@ use crate::types::Tuning;
 use super::binary_encode::BinaryEncode;
 use super::uint::Uint;
 
+struct EncodeParams {
+    time_quantization: i32,
+}
+
 impl BinaryEncode for Sequence {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
+        C: EncodeParams,
     {
         let file_version: i8 = 0;
         file_version.encode(wr)?;
