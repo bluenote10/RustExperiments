@@ -6,8 +6,8 @@ use super::binary_encode::BinaryEncode;
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Uint(pub u64);
 
-impl BinaryEncode for Uint {
-    fn encode<W>(&self, wr: &mut W) -> Result<()>
+impl<C> BinaryEncode<C> for Uint {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {

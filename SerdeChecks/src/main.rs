@@ -8,7 +8,7 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use custom_file_format::to_vec;
+use custom_file_format::serialize_sequence;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
@@ -130,9 +130,8 @@ fn write_as_bare(seq: &Sequence) -> FileSize {
 
 fn write_as_custom(seq: &Sequence) -> FileSize {
     let path = Path::new("/tmp/test.custom");
-    let data = to_vec(seq).unwrap();
     {
-        File::create(path).unwrap().write_all(&data).unwrap();
+        serialize_sequence(seq, File::create(path).unwrap()).unwrap();
     }
     get_file_size(path)
 }

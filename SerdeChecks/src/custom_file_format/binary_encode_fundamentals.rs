@@ -4,8 +4,8 @@ use std::io::Write;
 use super::binary_encode::BinaryEncode;
 use super::uint::Uint;
 
-impl BinaryEncode for bool {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for bool {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -18,8 +18,8 @@ impl BinaryEncode for bool {
     }
 }
 
-impl BinaryEncode for i8 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for i8 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -28,8 +28,8 @@ impl BinaryEncode for i8 {
     }
 }
 
-impl BinaryEncode for i16 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for i16 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -38,8 +38,8 @@ impl BinaryEncode for i16 {
     }
 }
 
-impl BinaryEncode for i32 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for i32 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -48,8 +48,8 @@ impl BinaryEncode for i32 {
     }
 }
 
-impl BinaryEncode for i64 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for i64 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -58,8 +58,8 @@ impl BinaryEncode for i64 {
     }
 }
 
-impl BinaryEncode for u8 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for u8 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -68,8 +68,8 @@ impl BinaryEncode for u8 {
     }
 }
 
-impl BinaryEncode for u16 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for u16 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -78,8 +78,8 @@ impl BinaryEncode for u16 {
     }
 }
 
-impl BinaryEncode for u32 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for u32 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -88,8 +88,8 @@ impl BinaryEncode for u32 {
     }
 }
 
-impl BinaryEncode for u64 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for u64 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -98,8 +98,8 @@ impl BinaryEncode for u64 {
     }
 }
 
-impl BinaryEncode for usize {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for usize {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -108,8 +108,8 @@ impl BinaryEncode for usize {
     }
 }
 
-impl BinaryEncode for f32 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for f32 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -118,8 +118,8 @@ impl BinaryEncode for f32 {
     }
 }
 
-impl BinaryEncode for f64 {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for f64 {
+    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -128,8 +128,8 @@ impl BinaryEncode for f64 {
     }
 }
 
-impl BinaryEncode for str {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<C> BinaryEncode<C> for str {
+    fn encode<W>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -139,8 +139,8 @@ impl BinaryEncode for str {
     }
 }
 
-impl<T: BinaryEncode> BinaryEncode for [T] {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<T: BinaryEncode<C>, C> BinaryEncode<C> for [T] {
+    fn encode<W>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -152,8 +152,8 @@ impl<T: BinaryEncode> BinaryEncode for [T] {
     }
 }
 
-impl<T: BinaryEncode> BinaryEncode for Option<T> {
-    fn encode<W, C>(&self, wr: &mut W, context: &C) -> Result<()>
+impl<T: BinaryEncode<C>, C> BinaryEncode<C> for Option<T> {
+    fn encode<W>(&self, wr: &mut W, context: &C) -> Result<()>
     where
         W: Write,
     {
