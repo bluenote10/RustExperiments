@@ -1,4 +1,5 @@
 mod custom_file_format;
+mod semantics;
 mod types;
 
 use std::fs::File;
