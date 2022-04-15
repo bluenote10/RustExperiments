@@ -1,13 +1,13 @@
 use std::io::Result;
 use std::io::Write;
 
-use super::binary_encode::BinaryEncode;
+use super::serialize::Serialize;
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Uint(pub u64);
 
-impl<C> BinaryEncode<C> for Uint {
-    fn encode<W>(&self, wr: &mut W, _context: &C) -> Result<()>
+impl<C> Serialize<C> for Uint {
+    fn serialize_into<W>(&self, wr: &mut W, _context: &C) -> Result<()>
     where
         W: Write,
     {
@@ -37,91 +37,97 @@ impl<C> BinaryEncode<C> for Uint {
 
 #[cfg(test)]
 mod test {
-    use super::super::binary_encode::to_vec;
+    use super::super::serialize::serialize_into_vec;
     use super::*;
 
     #[test]
-    fn test_encode() {
+    fn test_uint_serialization() {
         let x = Uint(0);
-        assert_eq!(to_vec(&x).unwrap(), [0]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0]);
         let x = Uint(1);
-        assert_eq!(to_vec(&x).unwrap(), [1]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [1]);
         let x = Uint(0x7f);
-        assert_eq!(to_vec(&x).unwrap(), [0x7f]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0x7f]);
         let x = Uint(0x80);
-        assert_eq!(to_vec(&x).unwrap(), [0x80, 0x01]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0x80, 0x01]);
         let x = Uint(0xff);
-        assert_eq!(to_vec(&x).unwrap(), [0xff, 0x01]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0xff, 0x01]);
 
         let x = Uint(u64::MAX);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
         );
         let x = Uint(u64::MAX - 1);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
         );
 
         let x = Uint(u64::MAX >> 1);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]
         );
         let x = Uint(u64::MAX >> 2);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x3f]
         );
         let x = Uint(u64::MAX >> 3);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x1f]
         );
         let x = Uint(u64::MAX >> 4);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f]
         );
 
         let x = Uint(u64::MAX >> 5);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x07]
         );
         let x = Uint(u64::MAX >> 6);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03]
         );
         let x = Uint(u64::MAX >> 7);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01]
         );
         let x = Uint(u64::MAX >> 8);
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]
         );
 
         let x = Uint(u64::MAX >> (8 + 7));
         assert_eq!(
-            to_vec(&x).unwrap(),
+            serialize_into_vec(&x).unwrap(),
             [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]
         );
         let x = Uint(u64::MAX >> (8 + 2 * 7));
-        assert_eq!(to_vec(&x).unwrap(), [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]);
+        assert_eq!(
+            serialize_into_vec(&x).unwrap(),
+            [0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]
+        );
         let x = Uint(u64::MAX >> (8 + 3 * 7));
-        assert_eq!(to_vec(&x).unwrap(), [0xff, 0xff, 0xff, 0xff, 0x7f]);
+        assert_eq!(
+            serialize_into_vec(&x).unwrap(),
+            [0xff, 0xff, 0xff, 0xff, 0x7f]
+        );
         let x = Uint(u64::MAX >> (8 + 4 * 7));
-        assert_eq!(to_vec(&x).unwrap(), [0xff, 0xff, 0xff, 0x7f]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0xff, 0xff, 0xff, 0x7f]);
         let x = Uint(u64::MAX >> (8 + 5 * 7));
-        assert_eq!(to_vec(&x).unwrap(), [0xff, 0xff, 0x7f]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0xff, 0xff, 0x7f]);
         let x = Uint(u64::MAX >> (8 + 6 * 7));
-        assert_eq!(to_vec(&x).unwrap(), [0xff, 0x7f]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0xff, 0x7f]);
         let x = Uint(u64::MAX >> (8 + 7 * 7));
-        assert_eq!(to_vec(&x).unwrap(), [0x7f]);
+        assert_eq!(serialize_into_vec(&x).unwrap(), [0x7f]);
     }
 }
