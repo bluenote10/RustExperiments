@@ -82,7 +82,7 @@ fn parse_note(time_quantization: u64) -> impl Fn(&[u8]) -> IResult<&[u8], Note> 
 fn parse_note_effects(input: &[u8]) -> IResult<&[u8], NoteEffects> {
     let (input, dead_note) = parse_bool(input)?;
     let (input, vibrato) = parse_bool(input)?;
-    let (input, bend_data) = parse_option(parse_bend_data, input)?;
+    let (input, bend_data) = parse_option(parse_bend_data)(input)?;
     Ok((
         input,
         NoteEffects {

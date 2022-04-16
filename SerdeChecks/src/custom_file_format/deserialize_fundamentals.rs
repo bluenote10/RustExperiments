@@ -1,10 +1,15 @@
+use std::ops::RangeFrom;
+
 use nom::bytes::complete::take;
 use nom::combinator::map;
 use nom::error::Error;
 use nom::multi::count;
 use nom::number::complete::le_u8;
 use nom::IResult;
+use nom::InputIter;
+use nom::InputLength;
 use nom::Parser;
+use nom::Slice;
 
 use super::uint::parse_uint;
 
@@ -36,7 +41,10 @@ where
 }
 */
 
-pub fn parse_bool(input: &[u8]) -> IResult<&[u8], bool> {
+pub fn parse_bool<I>(input: I) -> IResult<I, bool>
+where
+    I: Slice<RangeFrom<usize>> + InputIter<Item = u8> + InputLength,
+{
     map(le_u8, |x| x != 0)(input)
 }
 
@@ -56,15 +64,35 @@ where
     Ok((input, res))
 }
 
-pub fn parse_option<'a, O, F>(mut f: F, input: &'a [u8]) -> IResult<&[u8], Option<O>>
+/*
+pub fn parse_option<I, O, F>(mut f: F) -> impl FnMut(I) -> IResult<I, Option<O>>
+where
+    F: Parser<I, O, Error<I>>,
+    I: Slice<RangeFrom<usize>> + InputIter<Item = u8> + InputLength,
+{
+    move |input: I| {
+        let (input, is_defined) = parse_bool(input)?;
+        if is_defined {
+            let (input, res) = f.parse(input)?;
+            Ok((input, Some(res)))
+        } else {
+            Ok((input, None))
+        }
+    }
+}
+*/
+
+pub fn parse_option<'a, O, F>(mut f: F) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Option<O>>
 where
     F: Parser<&'a [u8], O, Error<&'a [u8]>>,
 {
-    let (input, is_defined) = parse_bool(input)?;
-    if is_defined {
-        let (input, res) = f.parse(input)?;
-        Ok((input, Some(res)))
-    } else {
-        Ok((input, None))
+    move |input: &'a [u8]| {
+        let (input, is_defined) = parse_bool(input)?;
+        if is_defined {
+            let (input, res) = f.parse(input)?;
+            Ok((input, Some(res)))
+        } else {
+            Ok((input, None))
+        }
     }
 }
