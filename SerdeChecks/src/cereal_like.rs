@@ -188,5 +188,7 @@ mod test {
         foo.handle(&mut handler).unwrap(); // major design flaw: deserializing is in-place / mutable.
 
         assert_eq!(foo, Foo { a: 1, b: 2 });
+
+        // Conclusion: Separate serialize/deserialize methods like serde uses are just more idiomatic.
     }
 }
