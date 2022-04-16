@@ -14,7 +14,7 @@ use super::serialize::Serialize;
 use super::uint::Uint;
 
 struct Params {
-    time_quantization: u32,
+    time_quantization: u64,
 }
 
 pub fn serialize_sequence<W>(sequence: &Sequence, mut wr: W) -> Result<()>
@@ -34,7 +34,7 @@ impl Serialize<Params> for Sequence {
     {
         let file_version: i8 = 0;
         file_version.serialize_into(wr, context)?;
-        Uint(context.time_quantization.into()).serialize_into(wr, context)?;
+        Uint(context.time_quantization).serialize_into(wr, context)?;
         self.tempo_map.serialize_into(wr, context)?;
         self.tracks.serialize_into(wr, context)?;
         Ok(())
@@ -127,12 +127,12 @@ impl Serialize<Params> for BendPoint {
     }
 }
 
-fn split_in_beat_and_offset(t: f64, time_quantization: u32) -> (Uint, Uint) {
+fn split_in_beat_and_offset(t: f64, time_quantization: u64) -> (Uint, Uint) {
     let beat = Uint(t as u64);
     let offset = quantize_duration(t - (beat.0 as f64), time_quantization);
     (beat, offset)
 }
 
-fn quantize_duration(duration: f64, time_quantization: u32) -> Uint {
+fn quantize_duration(duration: f64, time_quantization: u64) -> Uint {
     Uint((duration * time_quantization as f64) as u64)
 }
