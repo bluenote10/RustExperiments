@@ -5,5 +5,6 @@ mod serialize_fundamentals;
 mod serialize_types;
 mod uint;
 
+pub use deserialize_types::parse_sequence;
 pub use serialize::serialize_into_vec;
 pub use serialize_types::serialize_sequence;

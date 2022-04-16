@@ -1,0 +1,28 @@
+# Inspired by:
+# https://github.com/mongodb/bson-rust/commit/8d8e90c9ce7c01df1d3503de1757468be3f475da
+
+[package]
+name = "fuzz-experiment"
+version = "0.0.1"
+authors = ["Fabian Keller <github.100.fkeller@spamgourmet.com>"]
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies.serde_checks]
+path = ".."
+
+[dependencies.libfuzzer-sys]
+git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "deserialize"
+path = "fuzz_targets/deserialize.rs"
+
+# To run fuzzer:
+# cargo +nightly fuzz run deserialize

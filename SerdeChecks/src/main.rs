@@ -1,8 +1,3 @@
-mod cereal_like;
-mod custom_file_format;
-mod semantics;
-mod types;
-
 use std::fs::File;
 use std::io::copy;
 use std::io::BufReader;
@@ -10,11 +5,11 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use custom_file_format::serialize_sequence;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
-use types::Sequence;
+use serde_checks::serialize_sequence;
+use serde_checks::types::Sequence;
 
 fn load_sequence_from_file(path: &Path) -> Sequence {
     let file = File::open(path).unwrap();

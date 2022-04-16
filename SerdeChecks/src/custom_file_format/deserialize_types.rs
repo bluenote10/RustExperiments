@@ -13,7 +13,7 @@ use crate::types::Tuning;
 use super::deserialize_fundamentals::{parse_bool, parse_option, parse_string, parse_vector};
 use super::uint::parse_uint;
 
-fn parse_sequence(input: &[u8]) -> IResult<&[u8], Sequence> {
+pub fn parse_sequence(input: &[u8]) -> IResult<&[u8], Sequence> {
     let (input, file_version) = le_i8(input)?;
     let (input, time_quantization) = parse_uint(input)?;
     let (input, tempo_map) = parse_tempo_map(input)?;
