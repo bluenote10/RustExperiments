@@ -1,22 +1,12 @@
-use std::cell::Cell;
-
 use nom::bytes::complete::take;
 use nom::combinator::map;
 use nom::error::Error;
 use nom::multi::count;
-use nom::number::complete::{be_f32, be_f64, le_u8};
+use nom::number::complete::le_u8;
+use nom::IResult;
 use nom::Parser;
-use nom::{bytes::complete::take_while, IResult};
 
-use super::uint::{parse_uint, Uint};
-use crate::types::BendData;
-use crate::types::BendPoint;
-use crate::types::Note;
-use crate::types::NoteEffects;
-use crate::types::Sequence;
-use crate::types::TempoMap;
-use crate::types::Track;
-use crate::types::Tuning;
+use super::uint::parse_uint;
 
 /*
 pub fn parse_vector<'a, O, F>(mut f: F) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Vec<O>>
@@ -52,17 +42,17 @@ pub fn parse_bool(input: &[u8]) -> IResult<&[u8], bool> {
 
 pub fn parse_string(input: &[u8]) -> IResult<&[u8], String> {
     let (input, size) = parse_uint(input)?;
-    let (input, bytes) = take(size.0)(input)?;
+    let (input, bytes) = take(size)(input)?;
     let res = String::from_utf8(bytes.to_owned()).unwrap(); // TODO: Map error
     Ok((input, res))
 }
 
-pub fn parse_vector<'a, O, F>(mut f: F, input: &'a [u8]) -> IResult<&[u8], Vec<O>>
+pub fn parse_vector<'a, O, F>(f: F, input: &'a [u8]) -> IResult<&[u8], Vec<O>>
 where
     F: Parser<&'a [u8], O, Error<&'a [u8]>>,
 {
     let (input, size) = parse_uint(input)?;
-    let (input, res) = count(f, size.0.try_into().unwrap())(input)?;
+    let (input, res) = count(f, size.try_into().unwrap())(input)?; // TODO: Map error
     Ok((input, res))
 }
 

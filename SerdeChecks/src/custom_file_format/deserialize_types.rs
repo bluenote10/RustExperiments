@@ -1,9 +1,5 @@
-use std::cell::Cell;
-
-use nom::combinator::map_res;
-use nom::multi::count;
 use nom::number::complete::{le_f32, le_f64, le_i8, le_i32, le_u8};
-use nom::{bytes::complete::take_while, IResult};
+use nom::IResult;
 
 use crate::types::BendData;
 use crate::types::BendPoint;
@@ -15,16 +11,14 @@ use crate::types::Track;
 use crate::types::Tuning;
 
 use super::deserialize_fundamentals::{parse_bool, parse_option, parse_string, parse_vector};
-use super::uint::{parse_uint, Uint};
+use super::uint::parse_uint;
 
 fn parse_sequence(input: &[u8]) -> IResult<&[u8], Sequence> {
     let (input, file_version) = le_i8(input)?;
     let (input, time_quantization) = parse_uint(input)?;
     let (input, tempo_map) = parse_tempo_map(input)?;
-    let (input, tracks) = parse_vector(
-        |input| parse_track(time_quantization.0 as u32, input),
-        input,
-    )?;
+    let (input, tracks) =
+        parse_vector(|input| parse_track(time_quantization as u32, input), input)?;
     Ok((input, Sequence { tempo_map, tracks }))
 }
 
@@ -67,8 +61,8 @@ fn parse_note(time_quantization: u32, input: &[u8]) -> IResult<&[u8], Note> {
     let (input, string) = le_u8(input)?;
     let (input, fret) = le_u8(input)?;
     let (input, effects) = parse_note_effects(input)?;
-    let s = beat.0 as f64 + quantized_offset.0 as f64 * time_quantization as f64;
-    let d = quantized_duration.0 as f64 * time_quantization as f64;
+    let s = beat as f64 + quantized_offset as f64 * time_quantization as f64;
+    let d = quantized_duration as f64 * time_quantization as f64;
     Ok((
         input,
         Note {
