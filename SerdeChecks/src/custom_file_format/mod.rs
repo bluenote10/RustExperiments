@@ -1,3 +1,4 @@
+mod deserialize;
 mod serialize;
 mod serialize_fundamentals;
 mod serialize_types;
