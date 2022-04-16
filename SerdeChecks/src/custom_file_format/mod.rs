@@ -1,4 +1,5 @@
-mod deserialize;
+mod deserialize_fundamentals;
+mod deserialize_types;
 mod serialize;
 mod serialize_fundamentals;
 mod serialize_types;

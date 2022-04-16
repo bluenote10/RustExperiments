@@ -33,8 +33,8 @@ impl Serialize<Params> for Sequence {
         W: Write,
     {
         let file_version: i8 = 0;
-        Uint(context.time_quantization.into()).serialize_into(wr, context)?;
         file_version.serialize_into(wr, context)?;
+        Uint(context.time_quantization.into()).serialize_into(wr, context)?;
         self.tempo_map.serialize_into(wr, context)?;
         self.tracks.serialize_into(wr, context)?;
         Ok(())
