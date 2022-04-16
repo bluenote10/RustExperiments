@@ -17,7 +17,7 @@ fn parse_sequence(input: &[u8]) -> IResult<&[u8], Sequence> {
     let (input, file_version) = le_i8(input)?;
     let (input, time_quantization) = parse_uint(input)?;
     let (input, tempo_map) = parse_tempo_map(input)?;
-    let (input, tracks) = parse_vector(parse_track(time_quantization), input)?;
+    let (input, tracks) = parse_vector(parse_track(time_quantization))(input)?;
     Ok((input, Sequence { tempo_map, tracks }))
 }
 
@@ -31,7 +31,7 @@ fn parse_track(time_quantization: u64) -> impl Fn(&[u8]) -> IResult<&[u8], Track
         let (input, name) = parse_string(input)?;
         let (input, is_percussion) = parse_bool(input)?;
         let (input, tuning) = parse_tuning(input)?;
-        let (input, notes) = parse_vector(parse_note(time_quantization), input)?;
+        let (input, notes) = parse_vector(parse_note(time_quantization))(input)?;
         Ok((
             input,
             Track {
@@ -45,7 +45,7 @@ fn parse_track(time_quantization: u64) -> impl Fn(&[u8]) -> IResult<&[u8], Track
 }
 
 fn parse_tuning(input: &[u8]) -> IResult<&[u8], Tuning> {
-    let (input, string_base_pitches) = parse_vector(le_i32, input)?;
+    let (input, string_base_pitches) = parse_vector(le_i32)(input)?;
     Ok((
         input,
         Tuning {
@@ -94,9 +94,7 @@ fn parse_note_effects(input: &[u8]) -> IResult<&[u8], NoteEffects> {
 }
 
 fn parse_bend_data(input: &[u8]) -> IResult<&[u8], BendData> {
-    // let (input, num) = parse_uint(input)?;
-    // let (input, points) = count(parse_bend_point, num.0.try_into().unwrap())(input)?;
-    let (input, points) = parse_vector(parse_bend_point, input)?;
+    let (input, points) = parse_vector(parse_bend_point)(input)?;
     Ok((input, BendData { points }))
 }
 

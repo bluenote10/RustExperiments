@@ -13,34 +13,6 @@ use nom::Slice;
 
 use super::uint::parse_uint;
 
-/*
-pub fn parse_vector<'a, O, F>(mut f: F) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Vec<O>>
-where
-    //F: Parser<&'a [u8], O, Error<&'a [u8]>>,
-    F: FnOnce(&'a [u8]) -> IResult<&[u8], O>,
-{
-    move |input: &'a [u8]| {
-        //let mut input = i; //.clone();
-        //let mut input = input.clone();
-
-        let (input, num) = parse_uint(input)?;
-        let (input, res) = count(f, num.0.try_into().unwrap())(input)?;
-
-        Ok((input, res))
-    }
-}
-*/
-
-/*
-pub fn parse_vector<'a, 'b, O, F>(mut f: F) -> impl Parser<&'b [u8], Vec<O>, Error<&'b [u8]>>
-where
-    F: Parser<&'a [u8], O, Error<&'a [u8]>>,
-    //F: FnOnce(&'a [u8]) -> IResult<&[u8], O>,
-{
-    parse_uint.and_then(|num: Uint| count(f, num.0.try_into().unwrap()))
-}
-*/
-
 pub fn parse_bool<I>(input: I) -> IResult<I, bool>
 where
     I: Slice<RangeFrom<usize>> + InputIter<Item = u8> + InputLength,
@@ -55,32 +27,16 @@ pub fn parse_string(input: &[u8]) -> IResult<&[u8], String> {
     Ok((input, res))
 }
 
-pub fn parse_vector<'a, O, F>(f: F, input: &'a [u8]) -> IResult<&[u8], Vec<O>>
+pub fn parse_vector<'a, O, F>(mut f: F) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Vec<O>>
 where
     F: Parser<&'a [u8], O, Error<&'a [u8]>>,
 {
-    let (input, size) = parse_uint(input)?;
-    let (input, res) = count(f, size.try_into().unwrap())(input)?; // TODO: Map error
-    Ok((input, res))
-}
-
-/*
-pub fn parse_option<I, O, F>(mut f: F) -> impl FnMut(I) -> IResult<I, Option<O>>
-where
-    F: Parser<I, O, Error<I>>,
-    I: Slice<RangeFrom<usize>> + InputIter<Item = u8> + InputLength,
-{
-    move |input: I| {
-        let (input, is_defined) = parse_bool(input)?;
-        if is_defined {
-            let (input, res) = f.parse(input)?;
-            Ok((input, Some(res)))
-        } else {
-            Ok((input, None))
-        }
+    move |input: &'a [u8]| {
+        let (input, size) = parse_uint(input)?;
+        let (input, res) = count(|input| f.parse(input), size.try_into().unwrap())(input)?; // TODO: Map error
+        Ok((input, res))
     }
 }
-*/
 
 pub fn parse_option<'a, O, F>(mut f: F) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Option<O>>
 where
