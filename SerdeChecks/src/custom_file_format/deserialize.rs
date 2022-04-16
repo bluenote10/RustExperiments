@@ -6,10 +6,6 @@ use super::uint::Uint;
 
 #[allow(dead_code)]
 fn parse_uint(input: &[u8]) -> IResult<&[u8], Uint> {
-    // let (input, _) = take(1usize)(input)?;
-    // let mut x: u64 = 0;
-    // let mut i = 0;
-
     let x_cell = Cell::<u64>::new(0);
     let i_cell = Cell::new(0);
     let end_reached_cell = Cell::new(false);
@@ -22,7 +18,6 @@ fn parse_uint(input: &[u8]) -> IResult<&[u8], Uint> {
             let i = i_cell.get();
             let x = x_cell.get();
             let is_last = i == 8;
-            println!("{} {} {} {}", i, c, is_last, x);
 
             i_cell.set(i + 1);
             x_cell.set(x + ((if is_last { c } else { c & 0x7f } as u64) << (i as u64 * 7)));
