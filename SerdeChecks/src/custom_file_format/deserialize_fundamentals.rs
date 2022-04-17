@@ -2,14 +2,11 @@ use std::ops::RangeFrom;
 
 use nom::bytes::complete::take;
 use nom::combinator::map;
-use nom::error::Error;
+use nom::error::{Error, ErrorKind};
 use nom::multi::count;
 use nom::number::complete::le_u8;
-use nom::IResult;
-use nom::InputIter;
-use nom::InputLength;
-use nom::Parser;
-use nom::Slice;
+use nom::Err;
+use nom::{IResult, InputIter, InputLength, Parser, Slice};
 
 use super::uint::parse_uint;
 
@@ -22,9 +19,14 @@ where
 
 pub fn parse_string(input: &[u8]) -> IResult<&[u8], String> {
     let (input, size) = parse_uint(input)?;
-    let (input, bytes) = take(size)(input)?;
-    let res = String::from_utf8(bytes.to_owned()).unwrap(); // TODO: Map error
-    Ok((input, res))
+    if size as usize > input.len() {
+        Err(nom::Err::Error(Error::new(input, ErrorKind::TooLarge)))
+    } else {
+        let (input, bytes) = take(size)(input)?;
+        let res = String::from_utf8(bytes.to_owned())
+            .map_err(|_| Err::Error(Error::new(input, ErrorKind::Fail)))?; // for lack of more fitting error kind
+        Ok((input, res))
+    }
 }
 
 pub fn parse_vector<'a, O, F>(mut f: F) -> impl FnMut(&'a [u8]) -> IResult<&[u8], Vec<O>>
@@ -33,8 +35,15 @@ where
 {
     move |input: &'a [u8]| {
         let (input, size) = parse_uint(input)?;
-        let (input, res) = count(|input| f.parse(input), size.try_into().unwrap())(input)?; // TODO: Map error
-        Ok((input, res))
+        if size as usize > input.len() {
+            Err(Err::Error(Error::new(input, ErrorKind::TooLarge)))
+        } else {
+            let size: usize = size
+                .try_into()
+                .map_err(|_| Err::Error(Error::new(input, ErrorKind::TooLarge)))?;
+            let (input, res) = count(|input| f.parse(input), size)(input)?;
+            Ok((input, res))
+        }
     }
 }
 

@@ -24,5 +24,38 @@ members = ["."]
 name = "deserialize"
 path = "fuzz_targets/deserialize.rs"
 
+#
+# General notes
+# -------------
+#
 # To run fuzzer:
-# cargo +nightly fuzz run deserialize
+# RUST_BACKTRACE=1 cargo +nightly fuzz run deserialize
+#
+# The output is documented here: https://llvm.org/docs/LibFuzzer.html#output
+#
+# To make the coverage stuff work, it was necessary to first install cargo-binutils
+#
+# cargo install cargo-binutils
+#
+# Note that this seems to install binaries independent of the toolchain, or at least
+# the outpuf of
+# - cargo install --list
+# - cargo +nightly install --list
+# - cargo +stable install --list
+# seems to be the same.
+#
+# Then it was necessary to add the `llvm-tools-preview` component. In contrast to binaries
+# this seems to be channel specific, i.e., it was necessary to run:
+#
+# rustup +nightly component add llvm-tools-preview
+#
+# To check that llvm-profdata is installed properly: find ~/.rustup -iname llvm-profdata
+#
+# Now coverage can be generated via (https://rust-fuzz.github.io/book/cargo-fuzz/coverage.html):
+#
+# cargo +nightly fuzz coverage deserialize
+#
+# To create the HTML output:
+#
+# cargo cov -- show target/x86_64-unknown-linux-gnu/release/deserialize --format=html -instr-profile=coverage/deserialize/coverage.profdata > index.html
+#

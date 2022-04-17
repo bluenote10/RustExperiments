@@ -13,6 +13,16 @@ use crate::types::Tuning;
 use super::deserialize_fundamentals::{parse_bool, parse_option, parse_string, parse_vector};
 use super::uint::parse_uint;
 
+// Using a type alias for the verbose return type is impossible?
+// https://stackoverflow.com/questions/53916203/alias-a-generic-function-with-lifetimes
+// https://stackoverflow.com/a/26071172/1804173
+// trait DefaultParser<T>: Fn(&[u8]) -> IResult<&[u8], T> {}
+// impl<T, F: Fn(&[u8]) -> IResult<&[u8], T>> DefaultParser<T> for F {}
+// Actually the following would work, but then the lifetime parameter has
+// to be templated everywhere, making it just as verbose.
+// trait DefaultParser<'a, T>: Fn(&'a [u8]) -> IResult<&'a [u8], T> {}
+// impl<'a, T, F: Fn(&'a [u8]) -> IResult<&'a [u8], T>> DefaultParser<'a, T> for F {}
+
 pub fn parse_sequence(input: &[u8]) -> IResult<&[u8], Sequence> {
     let (input, file_version) = le_i8(input)?;
     let (input, time_quantization) = parse_uint(input)?;
