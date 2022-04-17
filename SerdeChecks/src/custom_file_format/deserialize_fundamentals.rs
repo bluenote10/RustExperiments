@@ -18,11 +18,11 @@ where
 }
 
 pub fn parse_string(input: &[u8]) -> IResult<&[u8], String> {
-    let (input, size) = parse_uint(input)?;
-    if size as usize > input.len() {
+    let (input, num_bytes) = parse_uint(input)?;
+    if num_bytes as usize > input.len() {
         Err(nom::Err::Error(Error::new(input, ErrorKind::TooLarge)))
     } else {
-        let (input, bytes) = take(size)(input)?;
+        let (input, bytes) = take(num_bytes)(input)?;
         let res = String::from_utf8(bytes.to_owned())
             .map_err(|_| Err::Error(Error::new(input, ErrorKind::Fail)))?; // for lack of more fitting error kind
         Ok((input, res))
@@ -34,11 +34,12 @@ where
     F: Parser<&'a [u8], O, Error<&'a [u8]>>,
 {
     move |input: &'a [u8]| {
-        let (input, size) = parse_uint(input)?;
-        if size as usize > input.len() {
+        let (input, num_elements) = parse_uint(input)?;
+        // Assuming an element has a minimum size of 1, we need at least that many bytes.
+        if num_elements as usize > input.len() {
             Err(Err::Error(Error::new(input, ErrorKind::TooLarge)))
         } else {
-            let size: usize = size
+            let size: usize = num_elements
                 .try_into()
                 .map_err(|_| Err::Error(Error::new(input, ErrorKind::TooLarge)))?;
             let (input, res) = count(|input| f.parse(input), size)(input)?;

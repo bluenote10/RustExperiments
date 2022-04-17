@@ -1,5 +1,6 @@
+use nom::error::{Error, ErrorKind};
 use nom::number::complete::{le_f32, le_f64, le_i8, le_i32, le_u8};
-use nom::IResult;
+use nom::{Err, IResult};
 
 use crate::types::BendData;
 use crate::types::BendPoint;
@@ -25,6 +26,9 @@ use super::uint::parse_uint;
 
 pub fn parse_sequence(input: &[u8]) -> IResult<&[u8], Sequence> {
     let (input, file_version) = le_i8(input)?;
+    if file_version != 0 {
+        return Err(Err::Error(Error::new(input, ErrorKind::Fail))); // for lack of more fitting error kind
+    }
     let (input, time_quantization) = parse_uint(input)?;
     let (input, tempo_map) = parse_tempo_map(input)?;
     let (input, tracks) = parse_vector(parse_track(time_quantization))(input)?;
@@ -73,8 +77,8 @@ fn parse_note(time_quantization: u64) -> impl Fn(&[u8]) -> IResult<&[u8], Note> 
         let (input, string) = le_u8(input)?;
         let (input, fret) = le_u8(input)?;
         let (input, effects) = parse_note_effects(input)?;
-        let s = beat as f64 + quantized_offset as f64 * time_quantization as f64;
-        let d = quantized_duration as f64 * time_quantization as f64;
+        let s = beat as f64 + quantized_offset as f64 / time_quantization as f64;
+        let d = quantized_duration as f64 / time_quantization as f64;
         Ok((
             input,
             Note {

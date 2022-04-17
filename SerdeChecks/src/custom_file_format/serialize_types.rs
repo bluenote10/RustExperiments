@@ -27,6 +27,12 @@ where
     sequence.serialize_into(&mut wr, &context)
 }
 
+pub fn serialize_sequence_to_vec(sequence: &Sequence) -> Result<Vec<u8>> {
+    let mut buf = Vec::new();
+    serialize_sequence(sequence, &mut buf)?;
+    Ok(buf)
+}
+
 impl Serialize<Params> for Sequence {
     fn serialize_into<W>(&self, wr: &mut W, context: &Params) -> Result<()>
     where
@@ -84,8 +90,6 @@ impl Serialize<Params> for Note {
         beat.serialize_into(wr, context)?;
         quantized_offset.serialize_into(wr, context)?;
         quantized_duration.serialize_into(wr, context)?;
-        // self.s.encode(wr)?;
-        // self.d.encode(wr)?;
         self.pitch.serialize_into(wr, context)?;
         self.string.serialize_into(wr, context)?;
         self.fret.serialize_into(wr, context)?;
@@ -134,5 +138,6 @@ fn split_in_beat_and_offset(t: f64, time_quantization: u64) -> (Uint, Uint) {
 }
 
 fn quantize_duration(duration: f64, time_quantization: u64) -> Uint {
-    Uint((duration * time_quantization as f64) as u64)
+    let time_quantization = time_quantization as f64;
+    Uint((duration * time_quantization).round() as u64)
 }
