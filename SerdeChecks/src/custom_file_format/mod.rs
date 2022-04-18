@@ -7,7 +7,7 @@ mod varint;
 
 pub use deserialize_types::parse_sequence;
 pub use serialize::serialize_into_vec;
-pub use serialize_types::{serialize_sequence, serialize_sequence_to_vec};
+pub use serialize_types::{serialize_sequence, serialize_sequence_to_vec, Params};
 
 #[cfg(test)]
 mod test {
@@ -15,6 +15,7 @@ mod test {
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
 
+    use crate::custom_file_format::serialize_types::Params;
     use crate::types::BendData;
     use crate::types::BendPoint;
     use crate::types::Note;
@@ -113,7 +114,11 @@ mod test {
         for _ in 0..num_runs {
             let sequence = gen_sequence(&mut rng);
 
-            let serialized = serialize_sequence_to_vec(&sequence).unwrap();
+            let params = Params {
+                time_quantization: TIME_QUANTIZATION as u64,
+                pitch_quantization: PITCH_QUANTIZATION as u64,
+            };
+            let serialized = serialize_sequence_to_vec(&sequence, &params).unwrap();
 
             let (_, sequence_reconstructed) = parse_sequence(&serialized).unwrap();
 

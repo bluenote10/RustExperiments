@@ -15,24 +15,29 @@ use super::varint::Int;
 use super::varint::Uint;
 
 pub struct Params {
-    time_quantization: u64,
-    pitch_quantization: u64,
+    pub time_quantization: u64,
+    pub pitch_quantization: u64,
 }
 
-pub fn serialize_sequence<W>(sequence: &Sequence, mut wr: W) -> Result<()>
+impl Default for Params {
+    fn default() -> Self {
+        Params {
+            time_quantization: 960,
+            pitch_quantization: 256,
+        }
+    }
+}
+
+pub fn serialize_sequence<W>(sequence: &Sequence, mut wr: W, params: &Params) -> Result<()>
 where
     W: Write,
 {
-    let context = Params {
-        time_quantization: 960,
-        pitch_quantization: 256,
-    };
-    sequence.serialize_into(&mut wr, &context)
+    sequence.serialize_into(&mut wr, params)
 }
 
-pub fn serialize_sequence_to_vec(sequence: &Sequence) -> Result<Vec<u8>> {
+pub fn serialize_sequence_to_vec(sequence: &Sequence, params: &Params) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
-    serialize_sequence(sequence, &mut buf)?;
+    serialize_sequence(sequence, &mut buf, params)?;
     Ok(buf)
 }
 

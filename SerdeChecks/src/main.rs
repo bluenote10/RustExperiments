@@ -10,6 +10,7 @@ use flate2::Compression;
 
 use serde_checks::serialize_sequence;
 use serde_checks::types::Sequence;
+use serde_checks::Params;
 
 fn load_sequence_from_file(path: &Path) -> Sequence {
     let file = File::open(path).unwrap();
@@ -128,7 +129,7 @@ fn write_as_bare(seq: &Sequence) -> FileSize {
 fn write_as_custom(seq: &Sequence) -> FileSize {
     let path = Path::new("/tmp/test.custom");
     {
-        serialize_sequence(seq, File::create(path).unwrap()).unwrap();
+        serialize_sequence(seq, File::create(path).unwrap(), &Params::default()).unwrap();
     }
     get_file_size(path)
 }
