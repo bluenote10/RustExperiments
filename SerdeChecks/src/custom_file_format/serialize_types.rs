@@ -11,7 +11,7 @@ use crate::types::Track;
 use crate::types::Tuning;
 
 use super::serialize::Serialize;
-use super::uint::Uint;
+use super::varint::Uint;
 
 struct Params {
     time_quantization: u64,

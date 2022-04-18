@@ -12,7 +12,7 @@ use crate::types::Track;
 use crate::types::Tuning;
 
 use super::deserialize_fundamentals::{parse_bool, parse_option, parse_string, parse_vector};
-use super::uint::parse_uint;
+use super::varint::parse_uint;
 
 // Using a type alias for the verbose return type is impossible?
 // https://stackoverflow.com/questions/53916203/alias-a-generic-function-with-lifetimes

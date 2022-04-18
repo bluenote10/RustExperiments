@@ -8,7 +8,7 @@ use nom::number::complete::le_u8;
 use nom::Err;
 use nom::{IResult, InputIter, InputLength, Parser, Slice};
 
-use super::uint::parse_uint;
+use super::varint::parse_uint;
 
 pub fn parse_bool<I>(input: I) -> IResult<I, bool>
 where

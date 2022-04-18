@@ -2,7 +2,7 @@ use std::io::Result;
 use std::io::Write;
 
 use super::serialize::Serialize;
-use super::uint::Uint;
+use super::varint::Uint;
 
 impl<C> Serialize<C> for bool {
     fn serialize_into<W>(&self, wr: &mut W, _context: &C) -> Result<()>

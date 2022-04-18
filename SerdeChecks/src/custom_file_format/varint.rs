@@ -6,6 +6,10 @@ use nom::{bytes::complete::take_while, IResult};
 
 use super::serialize::Serialize;
 
+// ----------------------------------------------------------------------------
+// Uint
+// ----------------------------------------------------------------------------
+
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Uint(pub u64);
 
@@ -61,6 +65,44 @@ pub fn parse_uint(input: &[u8]) -> IResult<&[u8], u64> {
     })(input)?;
 
     Ok((input, x_cell.get()))
+}
+
+// ----------------------------------------------------------------------------
+// Int
+// ----------------------------------------------------------------------------
+
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Int(pub i64);
+
+impl<C> Serialize<C> for Int {
+    fn serialize_into<W>(&self, wr: &mut W, context: &C) -> Result<()>
+    where
+        W: Write,
+    {
+        let uint = Uint(zig_zag_encode(self.0));
+        uint.serialize_into(wr, context)
+    }
+}
+
+pub fn parse_int(input: &[u8]) -> IResult<&[u8], i64> {
+    let (input, uint) = parse_uint(input)?;
+    Ok((input, zig_zag_decode(uint)))
+}
+
+fn zig_zag_encode(x: i64) -> u64 {
+    if x < 0 {
+        2 * !(x as u64) + 1
+    } else {
+        2 * (x as u64)
+    }
+}
+
+fn zig_zag_decode(x: u64) -> i64 {
+    if x & 1 == 1 {
+        !(x >> 1) as i64
+    } else {
+        (x >> 1) as i64
+    }
 }
 
 #[cfg(test)]
@@ -250,5 +292,27 @@ mod test {
             parse_uint(&[0xff, 0x7f, 0xff]).unwrap(),
             (&[0xff][..], u64::MAX >> (8 + 6 * 7))
         );
+    }
+
+    #[test]
+    fn test_zig_zag_encode() {
+        assert_eq!(zig_zag_encode(0), 0);
+        assert_eq!(zig_zag_encode(-1), 1);
+        assert_eq!(zig_zag_encode(1), 2);
+        assert_eq!(zig_zag_encode(-2), 3);
+        assert_eq!(zig_zag_encode(2), 4);
+        assert_eq!(zig_zag_encode(i64::MAX), u64::MAX - 1);
+        assert_eq!(zig_zag_encode(i64::MIN), u64::MAX);
+    }
+
+    #[test]
+    fn test_zig_zag_decode() {
+        assert_eq!(zig_zag_decode(0), 0);
+        assert_eq!(zig_zag_decode(1), -1);
+        assert_eq!(zig_zag_decode(2), 1);
+        assert_eq!(zig_zag_decode(3), -2);
+        assert_eq!(zig_zag_decode(4), 2);
+        assert_eq!(zig_zag_decode(u64::MAX - 1), i64::MAX);
+        assert_eq!(zig_zag_decode(u64::MAX), i64::MIN);
     }
 }

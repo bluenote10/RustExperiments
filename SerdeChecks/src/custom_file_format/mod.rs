@@ -3,7 +3,7 @@ mod deserialize_types;
 mod serialize;
 mod serialize_fundamentals;
 mod serialize_types;
-mod uint;
+mod varint;
 
 pub use deserialize_types::parse_sequence;
 pub use serialize::serialize_into_vec;
