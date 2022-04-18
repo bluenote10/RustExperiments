@@ -74,8 +74,8 @@ pub struct BendData {
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BendPoint {
-    pub bend: f32,
     pub pos: f64,
+    pub bend: f32,
 }
 
 fn bool_is_false(x: &bool) -> bool {

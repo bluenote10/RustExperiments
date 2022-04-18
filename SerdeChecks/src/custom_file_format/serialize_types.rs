@@ -11,10 +11,12 @@ use crate::types::Track;
 use crate::types::Tuning;
 
 use super::serialize::Serialize;
+use super::varint::Int;
 use super::varint::Uint;
 
-struct Params {
+pub struct Params {
     time_quantization: u64,
+    pitch_quantization: u64,
 }
 
 pub fn serialize_sequence<W>(sequence: &Sequence, mut wr: W) -> Result<()>
@@ -23,6 +25,7 @@ where
 {
     let context = Params {
         time_quantization: 960,
+        pitch_quantization: 256,
     };
     sequence.serialize_into(&mut wr, &context)
 }
@@ -41,6 +44,7 @@ impl Serialize<Params> for Sequence {
         let file_version: i8 = 0;
         file_version.serialize_into(wr, context)?;
         Uint(context.time_quantization).serialize_into(wr, context)?;
+        Uint(context.pitch_quantization).serialize_into(wr, context)?;
         self.tempo_map.serialize_into(wr, context)?;
         self.tracks.serialize_into(wr, context)?;
         Ok(())
@@ -86,7 +90,7 @@ impl Serialize<Params> for Note {
         W: Write,
     {
         let (beat, quantized_offset) = split_in_beat_and_offset(self.s, context.time_quantization);
-        let quantized_duration = quantize_duration(self.d, context.time_quantization);
+        let quantized_duration = quantize_uint(self.d, context.time_quantization);
         beat.serialize_into(wr, context)?;
         quantized_offset.serialize_into(wr, context)?;
         quantized_duration.serialize_into(wr, context)?;
@@ -125,19 +129,26 @@ impl Serialize<Params> for BendPoint {
     where
         W: Write,
     {
-        self.bend.serialize_into(wr, context)?;
-        self.pos.serialize_into(wr, context)?;
+        let quantized_pos = quantize_uint(self.pos, context.time_quantization); // Is it guaranteed that pos is never negative?
+        let quantized_bend = quantize_int(self.bend as f64, context.pitch_quantization);
+        quantized_pos.serialize_into(wr, context)?;
+        quantized_bend.serialize_into(wr, context)?;
         Ok(())
     }
 }
 
 fn split_in_beat_and_offset(t: f64, time_quantization: u64) -> (Uint, Uint) {
     let beat = Uint(t as u64);
-    let offset = quantize_duration(t - (beat.0 as f64), time_quantization);
+    let offset = quantize_uint(t - (beat.0 as f64), time_quantization);
     (beat, offset)
 }
 
-fn quantize_duration(duration: f64, time_quantization: u64) -> Uint {
-    let time_quantization = time_quantization as f64;
-    Uint((duration * time_quantization).round() as u64)
+fn quantize_uint(value: f64, quantization: u64) -> Uint {
+    let quantization = quantization as f64;
+    Uint((value * quantization).round() as u64)
+}
+
+fn quantize_int(value: f64, quantization: u64) -> Int {
+    let quantization = quantization as f64;
+    Int((value * quantization).round() as i64)
 }
