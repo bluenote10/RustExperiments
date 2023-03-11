@@ -1,0 +1,18 @@
+[package]
+name = "foo"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "foo"
+bench = false
+
+[dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
+rand = "0.8"
+
+[[bench]]
+name = "my_benchmark"
+harness = false
