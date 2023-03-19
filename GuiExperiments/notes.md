@@ -60,6 +60,17 @@ https://github.com/demonthos/sledgehammer
 
 - The Rust equivalent of dear-imgui, but actually looking almost more advanced.
 
+## Bevy
+
+- Rather a game engine.
+- UI functionality looks pretty basic.
+- Quite interesting: It looks like the Dioxus and Bevy authors have joined forces on a high performance
+  layout UI layout library (I assume Dioxus mainly needs it in the desktop mode to match the DOM semantics).
+  Originally on reddit this was called "stretch2" but I think it now is named "taffy":
+  https://github.com/DioxusLabs/taffy
+  https://www.reddit.com/r/rust/comments/umwjt4/bevy_and_dioxus_are_collaborating_on_stretch2_a/
+
+
 ## Slint
 
 https://github.com/slint-ui/slint
@@ -69,3 +80,24 @@ https://github.com/slint-ui/slint
 - Many backends, not just web.
 - Uses a special markup language for abstraction.
 - UI components not very nice.
+
+
+# WebGPU
+
+To test if browser supports it:
+- https://webgpu.github.io/webgpu-samples/samples/helloTriangle
+- https://webkit.org/demos/webgpu/hello-triangle.html
+- https://webkit.org/demos/webgpu/hello-cube.html
+- https://hello-webgpu-compute.glitch.me/
+- https://toji.github.io/webgpu-clustered-shading/
+
+
+This gives an overview of support status:
+- https://github.com/gpuweb/gpuweb/wiki/Implementation-Status
+
+Note that stable Firefox has the settings mentioned in
+https://stackoverflow.com/questions/73706354/how-to-try-webgpu-in-firefox-nightly-now-in-fall-of-2022
+in `about:config` but it looks like you just get a different kind of
+error when enabling it with all the demos/tests.
+
+General showcases (mostly Desktop apps for now?): https://wgpu.rs/
