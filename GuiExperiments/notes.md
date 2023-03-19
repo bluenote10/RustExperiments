@@ -10,8 +10,9 @@ Misc general resources / overviews / discussions:
 - https://www.reddit.com/r/rust/comments/yd9ngs/worried_about_modern_rust_gui_libraries/
   Worries about VDOM based approaches with discussions on alternatives.
 
+## DOM-based
 
-## Yew
+### Yew
 
 - Most mature / oldest framework
 - ELM architecture based
@@ -19,7 +20,7 @@ Misc general resources / overviews / discussions:
 
 
 
-## Dioxus
+### Dioxus
 
 https://dioxuslabs.com/
 
@@ -31,19 +32,33 @@ This blob post summarizes some design aspects and performance aspects well:
 https://dioxuslabs.com/blog/templates-diffing/
 
 
-## Sycamore
+### Sycamore
 
 - More mature than Leptos
 - No VDOM, SolidJS architecture
 
 
-## Leptos
+### Leptos
 
 https://github.com/leptos-rs/leptos
 
 - Comes with server side rendering in mind.
 - No VDOM, SolidJS architecture
 
+
+### Sledgehammer
+
+https://github.com/demonthos/sledgehammer
+
+- Looks very much optimized for the krausest benchmark.
+- States that wasm-bindgen/web-sys is more general/ergonomic (are pure manual DOM modifications ergonomic?)
+
+
+## Non-DOM based
+
+## egui
+
+- The Rust equivalent of dear-imgui, but actually looking almost more advanced.
 
 ## Slint
 
@@ -54,12 +69,3 @@ https://github.com/slint-ui/slint
 - Many backends, not just web.
 - Uses a special markup language for abstraction.
 - UI components not very nice.
-
-
-## Sledgehammer
-
-https://github.com/demonthos/sledgehammer
-
-- Looks very much optimized for the krausest benchmark.
-- States that wasm-bindgen/web-sys is more general/ergonomic (are pure manual DOM modifications ergonomic?)
-
