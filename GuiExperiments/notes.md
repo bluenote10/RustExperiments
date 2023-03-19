@@ -21,11 +21,14 @@ Misc general resources / overviews / discussions:
 
 ## Dioxus
 
+https://dioxuslabs.com/
+
 - VDOM based
 - Surprisingly good performance for a VDOM approach
 - Many target systems, not just web.
 
-https://dioxuslabs.com/
+This blob post summarizes some design aspects and performance aspects well:
+https://dioxuslabs.com/blog/templates-diffing/
 
 
 ## Sycamore

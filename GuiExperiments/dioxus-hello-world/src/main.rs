@@ -10,12 +10,23 @@ fn main() {
 }
 
 fn App(cx: Scope) -> Element {
-    console_log!("Hello {}!", "world");
-    console_log!("2 + 4 = {}", 2 + 4);
+    // Note working like that?
+    // let value: &mut u32 = cx.use_hook(|| 0);
+    let mut value = use_state(cx, || 0);
+
+    use_effect(cx, (value,), |(value,)| async move {
+        console_log!("Running effect, value changed to: {}", value);
+    });
+
+    console_log!("Re-rendering, value: {}", value);
 
     cx.render(rsx! {
         div {
             "Hello, world!"
-        }
+        },
+        div {
+            "Counter: {value}"
+        },
+        button { onclick: move |_| value += 1, "Increment" }
     })
 }
