@@ -15,9 +15,13 @@ Misc general resources / overviews / discussions:
 ### Yew
 
 - Most mature / oldest framework
-- ELM architecture based
+- Elm architecture based
 - VDOM based
 
+
+### Iced
+
+- Elm architecture based
 
 
 ### Dioxus
@@ -44,6 +48,21 @@ https://github.com/leptos-rs/leptos
 
 - Comes with server side rendering in mind.
 - No VDOM, SolidJS architecture
+
+
+### Druid
+
+https://github.com/linebender/druid
+
+- Deprecated, successor is Xilem
+
+
+### Xilem
+
+https://github.com/linebender/xilem
+
+- Looks still prototypical, but sounds like the design may be sophisticated.
+- To read, blog post: https://raphlinus.github.io/rust/gui/2022/05/07/ui-architecture.html
 
 
 ### Sledgehammer
@@ -101,3 +120,84 @@ in `about:config` but it looks like you just get a different kind of
 error when enabling it with all the demos/tests.
 
 General showcases (mostly Desktop apps for now?): https://wgpu.rs/
+
+
+# WASM notes
+
+There seems to be a general choice: bundler vs no bundler.
+
+So far experiments with Webpack felt bad.
+
+In general it should be possible to use Vite as well. This plugin looks relatively
+well maintained and mentions hot reloading (although not very much documented):
+- https://github.com/rwasm/vite-plugin-rsw
+
+There is also https://github.com/nshen/vite-plugin-wasm-pack but it doesn't look very
+actively maintained.
+
+
+**Is it possible to use C libraries in WASM**
+
+https://stackoverflow.com/questions/51666736/how-do-i-use-a-c-library-in-a-rust-library-compiled-to-webassembly
+
+That seems to be one of the key problem that people are trying to solve currently.
+
+In theory it can be possible to re-compile the C library with emscripten to bring it to WASM itself,
+then it should be possible to use it. However in practice that's not always straightforward apparently.
+
+
+# Web app frameworks / HTTP servers
+
+Overviews:
+- https://www.arewewebyet.org/topics/frameworks/
+- https://kerkour.com/rust-web-framework-2022
+- https://github.com/flosse/rust-web-framework-comparison
+
+Some entries found actually in the [LiveView examples](https://github.com/DioxusLabs/dioxus/tree/master/packages/liveview/examples)
+of Dioxus.
+
+Some benchmarks:
+- https://web-frameworks-benchmark.netlify.app/result?l=rust
+- https://github.com/programatik29/rust-web-benchmarks/blob/master/result/hello-world.md
+
+
+In terms of GitHub stars:
+Rocket (20.1k) > actix-web (16.9k) > Axum (9.2k) > warp (7.8k) > salvo (1.4k)
+
+
+## actix-web
+
+https://github.com/actix/actix-web
+
+
+## Axum
+
+https://github.com/tokio-rs/axum
+
+- Part of Tokio project
+
+## Salvo
+
+https://github.com/salvo-rs/salvo
+
+
+## Rocket
+
+https://github.com/SergioBenitez/Rocket
+
+
+## warp
+
+https://github.com/seanmonstar/warp
+
+
+## hyper
+
+https://github.com/hyperium/hyper
+
+> hyper is a relatively low-level library, meant to be a building block for libraries and applications.
+
+> If you are looking for a convenient HTTP client, then you may wish to consider reqwest.
+> If you are looking for a convenient HTTP server, then you may wish to consider warp.
+> Both are built on top of this library.
+
