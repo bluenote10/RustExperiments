@@ -15,13 +15,12 @@ pub fn run_internal() {
             std::panic::set_hook(Box::new(console_error_panic_hook::hook));
             console_log::init_with_level(log::Level::Info).expect("Couldn't initialize logger");
         } else {
-            env_logger::init();
+            env_logger::builder().filter_level(log::LevelFilter::Info).init();
         }
     }
     log::info!("Logger initialized successfully");
 
     let event_loop = EventLoop::new();
-    #[allow(unused_variables)]
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
     #[cfg(target_arch = "wasm32")]
@@ -47,27 +46,10 @@ pub fn run_internal() {
         wasm_bindgen_futures::spawn_local(render_triangle(event_loop, window));
     }
 
-    /*
-    event_loop.run(move |event, _, control_flow| match event {
-        Event::WindowEvent {
-            ref event,
-            window_id,
-        } if window_id == window.id() => match event {
-            WindowEvent::CloseRequested
-            | WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                        ..
-                    },
-                ..
-            } => *control_flow = ControlFlow::Exit,
-            _ => {}
-        },
-        _ => {}
-    });
-    */
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        pollster::block_on(render_triangle(event_loop, window));
+    }
 }
 
 async fn render_triangle(event_loop: EventLoop<()>, window: Window) {
@@ -159,6 +141,7 @@ async fn render_triangle(event_loop: EventLoop<()>, window: Window) {
                 event: WindowEvent::Resized(size),
                 ..
             } => {
+                log::info!("Resize event: {} x {}", size.width, size.height);
                 // Reconfigure the surface with the new size
                 config.width = size.width;
                 config.height = size.height;
@@ -167,6 +150,7 @@ async fn render_triangle(event_loop: EventLoop<()>, window: Window) {
                 window.request_redraw();
             }
             Event::RedrawRequested(_) => {
+                log::info!("RedrawRequested");
                 let frame = surface
                     .get_current_texture()
                     .expect("Failed to acquire next swap chain texture");
@@ -182,7 +166,7 @@ async fn render_triangle(event_loop: EventLoop<()>, window: Window) {
                             view: &view,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                 store: true,
                             },
                         })],
@@ -198,7 +182,9 @@ async fn render_triangle(event_loop: EventLoop<()>, window: Window) {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
-            } => *control_flow = ControlFlow::Exit,
+            } => {
+                *control_flow = ControlFlow::Exit;
+            }
             _ => {}
         }
     });
