@@ -1,22 +1,46 @@
 mod utils;
+mod wgpu_render;
 
-use crate::utils::console_log;
+use crate::{utils::console_log, wgpu_render::render_triangle};
 
-use std::f64;
 use wasm_bindgen::prelude::*;
+use web_sys::{Document, HtmlCanvasElement};
 
-fn add_canvas() -> Result<(), JsValue> {
+fn create_canvas_element(document: &Document) -> Result<HtmlCanvasElement, JsValue> {
+    let canvas = document.create_element("canvas")?;
+    let canvas: HtmlCanvasElement = canvas
+        .dyn_into::<HtmlCanvasElement>()
+        .map_err(|_| ())
+        .unwrap();
+    Ok(canvas)
+}
+
+fn check_canvas_context(canvas: &HtmlCanvasElement) -> String {
+    if canvas.get_context("2d").unwrap().is_some() {
+        "2d".into()
+    } else if canvas.get_context("webgl").unwrap().is_some() {
+        "webgl".into()
+    } else if canvas.get_context("webgl2").unwrap().is_some() {
+        "webgl2".into()
+    } else if canvas.get_context("webgpu").unwrap().is_some() {
+        "webgpu".into()
+    } else if canvas.get_context("bitmaprenderer").unwrap().is_some() {
+        "bitmaprenderer".into()
+    } else {
+        "unknown".into()
+    }
+}
+
+async fn add_canvas() -> Result<(), JsValue> {
     // Inspired by:
     // https://rustwasm.github.io/wasm-bindgen/examples/2d-canvas.html
 
     let window = web_sys::window().expect("no global `window` exists");
     let document = window.document().expect("should have a document on window");
 
-    let canvas = document.create_element("canvas")?;
-    let canvas: web_sys::HtmlCanvasElement = canvas
-        .dyn_into::<web_sys::HtmlCanvasElement>()
-        .map_err(|_| ())
-        .unwrap();
+    let canvas = create_canvas_element(&document)?;
+    canvas.set_width(800);
+    canvas.set_height(600);
 
     let context = canvas
         .get_context("2d")
@@ -28,38 +52,43 @@ fn add_canvas() -> Result<(), JsValue> {
     let root_div = document.get_element_by_id("root").unwrap();
     root_div.append_child(&canvas)?;
 
-    context.begin_path();
+    context.set_font("20px monospace");
+    context.fill_text("Hello world", 100.0, 100.0)?;
+    console_log!("Type of canvas: {}", check_canvas_context(&canvas));
 
-    // Draw the outer circle.
-    context
-        .arc(75.0, 75.0, 50.0, 0.0, f64::consts::PI * 2.0)
-        .unwrap();
+    // WebGL canvas
+    let canvas = create_canvas_element(&document)?;
+    canvas.set_width(800);
+    canvas.set_height(600);
+    root_div.append_child(&canvas)?;
 
-    // Draw the mouth.
-    context.move_to(110.0, 75.0);
-    context.arc(75.0, 75.0, 35.0, 0.0, f64::consts::PI).unwrap();
+    // Apparently we are not allowed to construct a context ourselves, otherwise
+    // wgpu will fail to construct a surface out of it.
+    // let webgl_context = canvas.get_context("webgl")?;
+    // console_log!("webgl_context: {:?}", webgl_context);
 
-    // Draw the left eye.
-    context.move_to(65.0, 65.0);
-    context
-        .arc(60.0, 65.0, 5.0, 0.0, f64::consts::PI * 2.0)
-        .unwrap();
+    render_triangle(&canvas).await;
+    console_log!("Type of canvas: {}", check_canvas_context(&canvas));
 
-    // Draw the right eye.
-    context.move_to(95.0, 65.0);
-    context
-        .arc(90.0, 65.0, 5.0, 0.0, f64::consts::PI * 2.0)
-        .unwrap();
+    // WebGPU canvas
+    let canvas = create_canvas_element(&document)?;
+    canvas.set_width(800);
+    canvas.set_height(600);
+    root_div.append_child(&canvas)?;
 
-    context.stroke();
+    let webgpu_context = canvas.get_context("webgpu")?;
+    console_log!("webgpu_context: {:?}", webgpu_context);
+    console_log!("Type of canvas: {}", check_canvas_context(&canvas));
 
     Ok(())
 }
 
 #[wasm_bindgen(start)]
-fn main() -> Result<(), JsValue> {
+async fn main() -> Result<(), JsValue> {
     console_log!("Initializing WASM...");
     console_error_panic_hook::set_once();
-    add_canvas().unwrap();
+
+    add_canvas().await?;
+
     Ok(())
 }
