@@ -1,5 +1,7 @@
+mod no_macros;
 mod style;
 
+use crate::no_macros::{NoMacrosSimpleCounter, NoMacrosSimpleCounterProps};
 use lazy_static::lazy_static;
 use leptos::*;
 use style::{create_style, css};
@@ -21,9 +23,18 @@ pub fn SimpleCounter(cx: Scope, initial_value: i32) -> impl IntoView {
         <div class=&*STYLE>
             <button on:click=clear>"Clear"</button>
             <button on:click=decrement>"-1"</button>
-            <span>"Value: " {value} "!"</span>
+            // <span>"Value: " {value} "!"</span>
+            <ValueDisplay value />
             <button on:click=increment>"+1"</button>
         </div>
+    }
+}
+
+#[component]
+pub fn ValueDisplay(cx: Scope, value: ReadSignal<i32>) -> impl IntoView {
+    view! {
+        cx,
+        <span>"Value: " {value} "!"</span>
     }
 }
 
@@ -67,5 +78,11 @@ css!(
 pub fn main() {
     log!("Mounting to body...");
     // add_css().expect("Failed to add CSS");
-    mount_to_body(|cx| view! { cx,  <SimpleCounter initial_value=3 /> })
+    mount_to_body(|cx| {
+        view! {
+            cx,
+            <SimpleCounter initial_value=3 />
+            <NoMacrosSimpleCounter initial_value=5 />
+        }
+    })
 }
