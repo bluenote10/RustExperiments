@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use leptos::log;
 use web_sys::HtmlCanvasElement;
 
 pub async fn render_triangle(canvas: &HtmlCanvasElement) {
@@ -110,4 +111,5 @@ pub async fn render_triangle(canvas: &HtmlCanvasElement) {
 
     queue.submit(Some(encoder.finish()));
     frame.present();
+    log!("Rendered successfully");
 }

@@ -1,4 +1,4 @@
-use crate::components::{Parent, ParentProps};
+use crate::canvas::{CanvasWrapper, CanvasWrapperProps};
 use leptos::*;
 
 pub fn run_app() {
@@ -6,7 +6,7 @@ pub fn run_app() {
     mount_to_body(|cx| {
         view! {
             cx,
-            <Parent />
+            <CanvasWrapper />
         }
     })
 }

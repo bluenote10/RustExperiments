@@ -1,5 +1,5 @@
 mod app;
-mod components;
+mod canvas;
 mod wgpu_render;
 
 pub use app::run_app;
