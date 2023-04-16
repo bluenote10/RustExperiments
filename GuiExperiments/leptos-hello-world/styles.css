@@ -339,3 +339,33 @@ template {
 [hidden] {
   display: none;
 }
+
+p.s-azXUKLSuEAYX {
+  color: darkblue;
+}
+div.s-azXUKLSuEAYX {
+  border: 1px solid darkblue;
+}
+ul.s-azXUKLSuEAYX {
+  margin: 16px;
+}
+li.s-azXUKLSuEAYX {
+  border: 1px solid green;
+}
+.selected.s-azXUKLSuEAYX {
+  background-color: lightblue;
+}
+.s-azXUKLSuEAYX {
+}
+
+p.s-fVHJuYNM6LRl {
+  color: seagreen;
+}
+div.s-fVHJuYNM6LRl {
+  border: 1px solid seagreen;
+}
+.selected.s-fVHJuYNM6LRl {
+  background-color: lightgreen;
+}
+.s-fVHJuYNM6LRl {
+}
