@@ -8,16 +8,12 @@ use style::{create_style, css};
 
 #[component]
 pub fn SimpleCounter(cx: Scope, initial_value: i32) -> impl IntoView {
-    // create a reactive signal with the initial value
     let (value, set_value) = create_signal(cx, initial_value);
 
-    // create event handlers for our buttons
-    // note that `value` and `set_value` are `Copy`, so it's super easy to move them into closures
     let clear = move |_| set_value(0);
     let decrement = move |_| set_value.update(|value| *value -= 1);
     let increment = move |_| set_value.update(|value| *value += 1);
 
-    // create user interfaces with the declarative `view!` macro
     view! {
         cx,
         <div class=&*STYLE>
@@ -74,6 +70,90 @@ css!(
     "#
 );
 
+/*
+Note on that ugly `MaybeSignal::derive`:
+
+Would it be possible to implement From directly for functions/closures?
+
+This seems tricky. The problem is that the From implementation needs to be
+generic in the function type. Something like:
+
+```
+impl<F, T> From<F> for MaybeSignal<T>
+where
+    F: Fn() -> T
+{
+    fn from(value: &str) -> Self {
+        unimplemented!()
+    }
+}
+```
+
+The problem is that this is not allowed, because there is also an implementation
+`impl<T> From<T> ...` which matches as well, and the compiler cannot know which one
+should be used. See:
+
+https://stackoverflow.com/questions/37347311/how-is-there-a-conflicting-implementation-of-from-when-using-a-generic-type
+
+Another try was to use a function wrapper with boxing like this:
+
+```
+struct FuncWrapper<T>(Box<dyn Fn() -> T>);
+
+impl<T> From<FuncWrapper<T>> for MaybeSignal<T> {
+    fn from(value: FuncWrapper<T>) -> Self {
+        Self::Dynamic(Signal::derive(cx, value.0))
+    }
+}
+```
+But that also cannot work, because deriving a signal need knowledge of the reactive context,
+which the closure doesn't know.
+
+In the end it may simple be best to get used to using a helper function to derive signals.
+
+```
+let double_value = create_derived_signal(cx, move |_| value() * 2);
+```
+
+which would be in line with other `create_...` functions.
+
+If that passing around of `cx` gets annoying, one could also add macro versions `create_signal!(...)`,
+`create_memo!(...)`, `create_derived_signal!(...)` that implicitly assume that the context is called
+`cx`. A bit nasty for saving 3 characters though (avoids the `cx, ` but adds an `!`).
+
+*/
+#[component]
+pub fn PropsPassingExperiment(cx: Scope) -> impl IntoView {
+    let (value, set_value) = create_signal(cx, 0);
+
+    let plain_t = 42;
+    let double_value = move || value() * 2;
+    let double_value_memoed = create_memo(cx, move |_| value() * 2);
+
+    let increment = move |_| set_value.update(|value| *value += 1);
+
+    view! {
+        cx,
+        <div>
+        <button on:click=increment>"increment"</button>
+        <SubComponent value={value} />
+        <SubComponent value={42} />
+        <SubComponent value={plain_t} />
+        // <SubComponent value={double_value} /> // This doesn't work and requires explicit deriving, see comment above.
+        <SubComponent value={MaybeSignal::derive(cx, double_value)} />
+        <SubComponent value={double_value_memoed} />
+        </div>
+    }
+}
+
+#[component]
+pub fn SubComponent(cx: Scope, #[prop(into)] value: MaybeSignal<i32>) -> impl IntoView {
+    view! {
+        cx,
+        <div>{value}</div>
+    }
+}
+
 // Easy to use with Trunk (trunkrs.dev) or with a simple wasm-bindgen setup
 pub fn main() {
     log!("Mounting to body...");
@@ -83,6 +163,7 @@ pub fn main() {
             cx,
             <SimpleCounter initial_value=3 />
             <NoMacrosSimpleCounter initial_value=5 />
+            <PropsPassingExperiment/>
         }
     })
 }
