@@ -136,25 +136,66 @@ pub fn PropsPassingExperiment(cx: Scope) -> impl IntoView {
         cx,
         <div>
         <button on:click=increment>"increment"</button>
-        <SubComponent value={value} />
-        <SubComponent value={42} />
-        <SubComponent value={plain_t} />
+
+        <SubComponent1 value={value} />
+        <SubComponent1 value={42} />
+        <SubComponent1 value={plain_t} />
         // <SubComponent value={double_value} /> // This doesn't work and requires explicit deriving, see comment above.
-        <SubComponent value={MaybeSignal::derive(cx, double_value)} />
-        <SubComponent value={double_value_memoed} />
+        <SubComponent1 value={MaybeSignal::derive(cx, double_value)} />
+        <SubComponent1 value={double_value_memoed} />
+
+        // <SubComponent2 value={String::from("Hello World")} /> // Using plain Signal prevents constants use as expected.
+        // As a work-around users would have to create dummy signals, a bit tedious.
+        <SubComponent2 value={create_signal(cx, "Hello World".into()).0} />
+        <SubComponent2 value={Signal::derive(cx, move || format!("stringified: {}", value()))} />
         </div>
     }
 }
 
 #[component]
-pub fn SubComponent(cx: Scope, #[prop(into)] value: MaybeSignal<i32>) -> impl IntoView {
+pub fn SubComponent1(
+    cx: Scope,
+    /// This prop is either constant or reactive.
+    #[prop(into)]
+    value: MaybeSignal<i32>,
+) -> impl IntoView {
+    log!("Rendering SubComponent1 with {:?}", value);
     view! {
         cx,
         <div>{value}</div>
     }
 }
 
-// Easy to use with Trunk (trunkrs.dev) or with a simple wasm-bindgen setup
+#[component]
+pub fn SubComponent2(
+    cx: Scope,
+    /// This prop is must be reactive -- unnecessarily restrictive?
+    #[prop(into)]
+    value: Signal<String>,
+) -> impl IntoView {
+    log!("Rendering SubComponent2 with {:?}", value);
+    view! {
+        cx,
+        <div>{value}</div>
+    }
+}
+
+#[component]
+pub fn MountTest(cx: Scope) -> impl IntoView {
+    let (mounted, set_mounted) = create_signal(cx, false);
+    let toggle = move |_| set_mounted.update(|value| *value = !*value);
+
+    view! {
+        cx,
+        <div>
+        <button on:click=toggle>"toggle"</button>
+        <Show when={mounted} fallback=|_| ()>
+          <SubComponent1 value={42}/>
+        </Show>
+        </div>
+    }
+}
+
 pub fn main() {
     log!("Mounting to body...");
     // add_css().expect("Failed to add CSS");
@@ -164,6 +205,7 @@ pub fn main() {
             <SimpleCounter initial_value=3 />
             <NoMacrosSimpleCounter initial_value=5 />
             <PropsPassingExperiment/>
+            <MountTest/>
         }
     })
 }
