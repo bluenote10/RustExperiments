@@ -1,11 +1,14 @@
 mod no_macros;
 mod style;
 mod svelte_like_styles;
+mod svelte_like_styles_via_stylers;
 
 use crate::{
     no_macros::{NoMacrosSimpleCounter, NoMacrosSimpleCounterProps},
     svelte_like_styles::Parent,
     svelte_like_styles::ParentProps,
+    svelte_like_styles_via_stylers::ParentV2,
+    svelte_like_styles_via_stylers::ParentV2Props,
 };
 use lazy_static::lazy_static;
 use leptos::*;
@@ -212,6 +215,7 @@ pub fn main() {
             <PropsPassingExperiment/>
             <MountTest/>
             <Parent />
+            <ParentV2 />
         }
     })
 }

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 lazy_static = "1.4.0"
 leptos = "0.2.4"
+stylers = "0.3.1"
 # leptos = { path = "../../../_ext/leptos/leptos" }
 wasm-bindgen = "0.2"
 
