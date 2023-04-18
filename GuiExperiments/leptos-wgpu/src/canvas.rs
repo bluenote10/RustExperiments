@@ -43,7 +43,7 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
     // resize_callback.forget();
 
     let on_mount = move |el: HtmlElement<Div>| {
-        log!("Mounting parent");
+        log!("Mounting wrapper div");
         let resize_observer = resize_observer.clone();
         let el: HtmlDivElement = el.deref().clone();
         resize_observer.observe(&el.into());
@@ -76,6 +76,7 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
         });
     };
 
+    /*
     let wrapper = view! {
         cx,
         class = STYLE,
@@ -84,12 +85,19 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
             </div>
     }
     .on_mount(on_mount);
+    */
 
     view! {
         cx,
         class = STYLE,
         <>
-            {wrapper}
+            {
+                view! { cx, class = STYLE,
+                    <div>
+                        <canvas node_ref=canvas />
+                    </div>
+                }.on_mount(on_mount)
+            }
             <button on:click=render>"Render"</button>
         </>
     }
