@@ -2,14 +2,12 @@ mod no_macros;
 mod style;
 mod svelte_like_styles;
 mod svelte_like_styles_via_stylers;
+mod timer;
 
-use crate::{
-    no_macros::{NoMacrosSimpleCounter, NoMacrosSimpleCounterProps},
-    svelte_like_styles::Parent,
-    svelte_like_styles::ParentProps,
-    svelte_like_styles_via_stylers::ParentV2,
-    svelte_like_styles_via_stylers::ParentV2Props,
-};
+use crate::no_macros::{NoMacrosSimpleCounter, NoMacrosSimpleCounterProps};
+use crate::svelte_like_styles::{Parent, ParentProps};
+use crate::svelte_like_styles_via_stylers::{ParentV2, ParentV2Props};
+use crate::timer::{Timer, TimerProps};
 use lazy_static::lazy_static;
 use leptos::*;
 use style::{create_style, css};
@@ -216,6 +214,7 @@ pub fn main() {
             <MountTest/>
             <Parent />
             <ParentV2 />
+            <Timer />
         }
     })
 }
