@@ -21,10 +21,16 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
         if let Some(canvas) = canvas.get() {
             canvas.set_width(ev.inline_size as u32);
             canvas.set_height(ev.block_size as u32);
-            // TODO:
-            // let style = canvas.style();
+            // Setting style requires:
             // https://github.com/rustwasm/wasm-bindgen/issues/1334
             // https://rustwasm.github.io/wasm-bindgen/api/web_sys/struct.HtmlCanvasElement.html#method.style
+            let style = canvas.deref().deref().style();
+            style
+                .set_property("width", &format!("{}px", ev.inline_size as u32,))
+                .expect("Failed to set canvas size");
+            style
+                .set_property("height", &format!("{}px", ev.block_size as u32,))
+                .expect("Failed to set canvas size");
         }
     });
 
@@ -33,7 +39,7 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
         // let canvas: &HtmlCanvasElement = canvas.deref();
         // log!("{:?} {} {}", canvas, canvas.width(), canvas.height());
         // log!("Calling render_triangle...");
-        // // spawn_local(asnyc_test_func());
+        // // spawn_local(async_test_func());
         spawn_local(async move {
             let canvas: &HtmlCanvasElement = canvas.deref();
             log!("{:?} {} {}", canvas, canvas.width(), canvas.height());
@@ -80,13 +86,14 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
 
 const STYLE: &str = style! {"Canvas",
     div {
-        border: 1px solid darkblue;
-        width: 100%;
+        margin: 10px;
         height: 600px;
     }
 
     canvas {
         width: 800px;
         height: 600px;
+        border: 1px solid darkblue;
+        background-color: #FAFAFA;
     }
 };
