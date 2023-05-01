@@ -13,4 +13,4 @@ proc-macro = true
 
 proc-macro2 = "*"
 quote = "*"
-syn = { version = "*", features = ["extra-traits"] }
+syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
