@@ -14,7 +14,7 @@ pub fn comp(input: TokenStream) -> TokenStream {
     // let input: TokenStream = input.into();
     // println!("wrapped input:\n{:#?}", input);
 
-    match parse_input(input) {
+    match syn::parse2::<CompBody>(input) {
         Ok(comp_body) => {
             println!("{:#?}", comp_body);
 
@@ -37,22 +37,36 @@ pub fn comp(input: TokenStream) -> TokenStream {
     */
 }
 
-fn parse_input(input: TokenStream) -> Result<CompBody> {
-    syn::parse2::<CompBody>(input)
-}
-
 #[derive(Debug)]
 struct CompBody {
-    expressions: Vec<Expr>,
+    expressions: Vec<CompExpr>,
 }
 
 impl Parse for CompBody {
     fn parse(input: ParseStream) -> Result<Self> {
         let expressions: Vec<_> = input
-            .parse_terminated(Expr::parse, Token![,])?
+            .parse_terminated(CompExpr::parse, Token![,])?
             .into_iter()
             .collect();
         Ok(CompBody { expressions })
+    }
+}
+
+#[derive(Debug)]
+struct CompExpr {
+    expr: Expr,
+}
+
+impl Parse for CompExpr {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let expr: Expr = input.parse()?;
+
+        match &expr {
+            Expr::Struct(expr_struct) => (),
+            _ => (),
+        }
+
+        Ok(CompExpr { expr })
     }
 }
 
@@ -60,26 +74,41 @@ impl Parse for CompBody {
 mod test {
     use super::*;
 
+    fn parse_comp_body(input: TokenStream) -> Result<CompBody> {
+        syn::parse2::<CompBody>(input)
+    }
+
     #[test]
-    fn test_parse_input() {
-        let stream: TokenStream = quote!();
-        let result = parse_input(stream).unwrap();
+    fn test_parse_comp_body() {
+        let stream = quote!();
+        let result = parse_comp_body(stream).unwrap();
         assert_eq!(result.expressions.len(), 0);
 
-        let stream: TokenStream = quote!(foo);
-        let result = parse_input(stream).unwrap();
+        let stream = quote!(foo);
+        let result = parse_comp_body(stream).unwrap();
         assert_eq!(result.expressions.len(), 1);
 
-        let stream: TokenStream = quote!(foo,);
-        let result = parse_input(stream).unwrap();
+        let stream = quote!(foo,);
+        let result = parse_comp_body(stream).unwrap();
         assert_eq!(result.expressions.len(), 1);
 
-        let stream: TokenStream = quote!(foo, bar);
-        let result = parse_input(stream).unwrap();
+        let stream = quote!(foo, bar);
+        let result = parse_comp_body(stream).unwrap();
         assert_eq!(result.expressions.len(), 2);
 
-        let stream: TokenStream = quote!(foo, bar,);
-        let result = parse_input(stream).unwrap();
+        let stream = quote!(foo, bar,);
+        let result = parse_comp_body(stream).unwrap();
         assert_eq!(result.expressions.len(), 2);
+    }
+
+    fn parse_comp_expr(input: TokenStream) -> Result<CompExpr> {
+        syn::parse2::<CompExpr>(input)
+    }
+
+    #[test]
+    fn test_parse_comp_expr() {
+        let stream = quote!(SomeComponent { prop_a: value });
+        let result = parse_comp_expr(stream).unwrap();
+        //assert_eq!(result.expressions.len(), 1);
     }
 }
