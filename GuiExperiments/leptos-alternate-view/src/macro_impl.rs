@@ -4,7 +4,7 @@ use quote::{quote, quote_spanned};
 use syn::{
     parse::{Parse, ParseStream},
     spanned::Spanned,
-    Expr, Ident, LitStr, Result, Token,
+    Error, Expr, FieldValue, Ident, LitStr, Path, Result, Token,
 };
 
 pub fn comp(input: TokenStream) -> TokenStream {
@@ -39,13 +39,13 @@ pub fn comp(input: TokenStream) -> TokenStream {
 
 #[derive(Debug)]
 struct CompBody {
-    expressions: Vec<CompExpr>,
+    expressions: Vec<Expr>,
 }
 
 impl Parse for CompBody {
     fn parse(input: ParseStream) -> Result<Self> {
         let expressions: Vec<_> = input
-            .parse_terminated(CompExpr::parse, Token![,])?
+            .parse_terminated(Expr::parse, Token![,])?
             .into_iter()
             .collect();
         Ok(CompBody { expressions })
@@ -54,19 +54,38 @@ impl Parse for CompBody {
 
 #[derive(Debug)]
 struct CompExpr {
-    expr: Expr,
+    ident: Ident,
+    fields: Vec<FieldValue>,
+    children: Vec<Expr>,
 }
 
 impl Parse for CompExpr {
     fn parse(input: ParseStream) -> Result<Self> {
         let expr: Expr = input.parse()?;
 
-        match &expr {
-            Expr::Struct(expr_struct) => (),
-            _ => (),
-        }
+        let (expr_struct, children) = if let Expr::Call(expr_call) = expr {
+            // convert from Punctuated<Expr, Comma> to Vec<_>
+            let args: Vec<_> = expr_call.args.iter().map(|arg| arg.clone()).collect();
+            (*expr_call.func.clone(), args)
+        } else {
+            (expr, vec![])
+        };
 
-        Ok(CompExpr { expr })
+        match &expr_struct {
+            Expr::Struct(expr_struct) => {
+                let Some(ident) = expr_struct.path.get_ident() else {
+                    return Err(Error::new_spanned(expr_struct.path.clone(), "A plain identifier is required"))
+                };
+                // convert from Punctuated<FieldValue, Comma> to Vec<_>
+                let fields: Vec<_> = expr_struct.fields.iter().map(|fv| fv.clone()).collect();
+                Ok(CompExpr {
+                    ident: ident.clone(),
+                    fields,
+                    children,
+                })
+            }
+            _ => Err(Error::new_spanned(expr_struct, "Unsupported expression")),
+        }
     }
 }
 
@@ -108,7 +127,21 @@ mod test {
     #[test]
     fn test_parse_comp_expr() {
         let stream = quote!(SomeComponent { prop_a: value });
-        let result = parse_comp_expr(stream).unwrap();
-        //assert_eq!(result.expressions.len(), 1);
+        let comp_expr = parse_comp_expr(stream).unwrap();
+        assert_eq!(comp_expr.ident.to_string(), "SomeComponent");
+        assert_eq!(comp_expr.fields.len(), 1);
+        assert_eq!(comp_expr.children.len(), 0);
+
+        let stream = quote!(SomeComponent { prop_a: value }(child));
+        let comp_expr = parse_comp_expr(stream).unwrap();
+        assert_eq!(comp_expr.ident.to_string(), "SomeComponent");
+        assert_eq!(comp_expr.fields.len(), 1);
+        assert_eq!(comp_expr.children.len(), 1);
+
+        let stream = quote!(SomeComponent { prop_a: value }(child_a, child_b));
+        let comp_expr = parse_comp_expr(stream).unwrap();
+        assert_eq!(comp_expr.ident.to_string(), "SomeComponent");
+        assert_eq!(comp_expr.fields.len(), 1);
+        assert_eq!(comp_expr.children.len(), 2);
     }
 }
