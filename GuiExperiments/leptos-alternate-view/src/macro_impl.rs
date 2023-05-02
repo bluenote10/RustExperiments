@@ -3,6 +3,7 @@ use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
 use quote::{quote, quote_spanned};
 use syn::{
     parse::{Parse, ParseStream},
+    punctuated::Punctuated,
     spanned::Spanned,
     Error, Expr, FieldValue, Ident, LitStr, Path, Result, Token,
 };
@@ -63,24 +64,21 @@ impl Parse for CompExpr {
     fn parse(input: ParseStream) -> Result<Self> {
         let expr: Expr = input.parse()?;
 
-        let (expr_struct, children) = if let Expr::Call(expr_call) = expr {
-            // convert from Punctuated<Expr, Comma> to Vec<_>
-            let args: Vec<_> = expr_call.args.iter().map(|arg| arg.clone()).collect();
-            (*expr_call.func.clone(), args)
+        // Unwrap call expression if it is one
+        let (expr, children) = if let Expr::Call(expr_call) = expr {
+            (*expr_call.func.clone(), flatten_punctuated(&expr_call.args))
         } else {
             (expr, vec![])
         };
 
-        match &expr_struct {
+        match &expr {
             Expr::Struct(expr_struct) => {
                 let Some(ident) = expr_struct.path.get_ident() else {
                     return Err(Error::new_spanned(expr_struct.path.clone(), "A plain identifier is required"))
                 };
-                // convert from Punctuated<FieldValue, Comma> to Vec<_>
-                let fields: Vec<_> = expr_struct.fields.iter().map(|fv| fv.clone()).collect();
                 Ok(CompExpr {
                     ident: ident.clone(),
-                    fields,
+                    fields: flatten_punctuated(&expr_struct.fields),
                     children,
                 })
             }
@@ -94,9 +92,16 @@ impl Parse for CompExpr {
                     children,
                 })
             }
-            _ => Err(Error::new_spanned(expr_struct, "Unsupported expression")),
+            _ => Err(Error::new_spanned(expr, "Unsupported expression")),
         }
     }
+}
+
+fn flatten_punctuated<T, P>(punctuated: &Punctuated<T, P>) -> Vec<T>
+where
+    T: Clone,
+{
+    punctuated.iter().map(|arg| arg.clone()).collect()
 }
 
 #[cfg(test)]
