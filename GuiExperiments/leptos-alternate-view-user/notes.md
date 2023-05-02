@@ -164,3 +164,131 @@ c!(p("Hello world"))
 <div>"Hello world"</div>
 c!(div("Hello world"))
 ```
+
+Example with just using `c!` everywhere:
+
+```rust
+c!(div { class: "foo" }(
+    c!(p("Hello")),
+    c!(p("World")),
+    c!(button { on_click: |_| {} }("World")),
+));
+```
+
+The double parens are a bit annoying.
+
+Alternative: Use raw literals as "marker" for expressions to be transformed. This could be
+applied recursively over the syntax tree, so that all occurrences get expanded at once without
+the necessity for multiple macro calls:
+
+```rust
+comp!(r#div { class: "foo" }(
+    r#p("Hello"),
+    r#p("Hello"),
+    r#p("World"),
+    r#button { on_click: |_| {} }("World"),
+));
+```
+
+It is a bit unfortunate that rustfmt formats this compactly, i.e., the outer div gets indented
+more than its children. If there are multiple "arguments" it becomes pretty nice though:
+
+```rust
+comp!(
+    r#div { class: "foo" }(
+        r#p("Hello"),
+        r#p("Hello"),
+        r#p("World"),
+        r#button { on_click: |_| {} }("World"),
+    ),
+    r#div { class: "foo" }(
+        r#p("Hello"),
+        r#p("Hello"),
+        r#p("World"),
+        r#button { on_click: |_| {} }("World"),
+    )
+);
+```
+
+What can get a bit tricky with this approach is expressions like `r#p("Hello").on_mount(...)`. Since
+there are no parens that separate the element construction, the macro would have to split of the part
+of the expression to expand, from the part of the expression that forms a suffix. Not sure if this
+could have a negative impact on auto-completion. It may be easier for the IDE to understand the return
+type of `c!(...)` and if it is followed up by a `.` the IDE can auto-complete "outside" the macro in
+regular code.
+
+Rather crazy: Use a unary minus as marker:
+
+```rust
+comp!(-div { class: "foo" }(
+    -p("Hello"),
+    -p("Hello"),
+    -p("World"),
+    -button { on_click: |_| {} }("World"),
+));
+```
+
+Doesn't look too bad, but probably very fragile to mix up with real unary minuses.
+
+
+# Expand examples
+
+```rust
+
+// input:
+view! { cx,
+    <div />
+}
+
+// output:
+leptos::leptos_dom::html::div(cx).with_view_marker("src-main.rs-31")
+
+// input:
+view! { cx,
+    <div class="foo">
+        <p>"Hello"</p>
+        <p>"World"</p>
+        <button on:click=|_| {}>"Click me"</button>
+    </div>
+}
+
+// output:
+leptos::leptos_dom::html::div(cx)
+    .attr("class", (cx, "foo"))
+    .child((
+        cx,
+        leptos::leptos_dom::html::p(cx)
+            .child((cx, #[allow(unused_braces)] "Hello")),
+    ))
+    .child((
+        cx,
+        leptos::leptos_dom::html::p(cx)
+            .child((cx, #[allow(unused_braces)] "World")),
+    ))
+    .child((
+        cx,
+        leptos::leptos_dom::html::button(cx)
+            .on(::leptos::ev::click, |_| {})
+            .child((cx, #[allow(unused_braces)] "Click me")),
+    ))
+    .with_view_marker("src-main.rs-31")
+
+
+// input:
+view! { cx,
+    <div />
+    <div />
+    <div />
+}
+
+// output
+leptos::Fragment::lazy(|| <[_]>::into_vec(
+        #[rustc_box]
+        ::alloc::boxed::Box::new([
+            leptos::leptos_dom::html::div(cx).into_view(cx),
+            leptos::leptos_dom::html::div(cx).into_view(cx),
+            leptos::leptos_dom::html::div(cx).into_view(cx),
+        ]),
+    ))
+    .with_view_marker("src-main.rs-31")
+```

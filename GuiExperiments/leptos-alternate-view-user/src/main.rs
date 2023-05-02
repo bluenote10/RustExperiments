@@ -26,6 +26,20 @@ fn main() {
 }
 */
 
+/*
+fn leptos_test() {
+    mount_to_body(|cx| {
+        view! { cx,
+            <div class="foo">
+                <p>"Hello"</p>
+                <p>"World"</p>
+                <button on:click=|_| {}>"Click me"</button>
+            </div>
+        }
+    })
+}
+*/
+
 fn main() {
     //comp!((foo, bar));
     //comp!(foo);
@@ -34,6 +48,19 @@ fn main() {
     //comp! {foo, bar};
 
     let style = "foo";
+
+    comp![div { class: "foo" }(
+        comp![p("Hello")],
+        comp![p("World")],
+        comp![button { on_click: |_| {} }("World")],
+    )];
+
+    comp!(-div { class: "foo" }(
+        -p("Hello"),
+        -p("Hello"),
+        -p("World"),
+        -button { on_click: |_| {} }("World"),
+    ));
 
     comp!(
         h("text"),
