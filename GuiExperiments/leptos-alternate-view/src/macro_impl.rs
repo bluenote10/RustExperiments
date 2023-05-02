@@ -84,6 +84,16 @@ impl Parse for CompExpr {
                     children,
                 })
             }
+            Expr::Path(expr_path) => {
+                let Some(ident) = expr_path.path.get_ident() else {
+                    return Err(Error::new_spanned(expr_path.clone(), "A plain identifier is required"))
+                };
+                Ok(CompExpr {
+                    ident: ident.clone(),
+                    fields: vec![],
+                    children,
+                })
+            }
             _ => Err(Error::new_spanned(expr_struct, "Unsupported expression")),
         }
     }
@@ -126,6 +136,18 @@ mod test {
 
     #[test]
     fn test_parse_comp_expr() {
+        let stream = quote!(div(child));
+        let comp_expr = parse_comp_expr(stream).unwrap();
+        assert_eq!(comp_expr.ident.to_string(), "div");
+        assert_eq!(comp_expr.fields.len(), 0);
+        assert_eq!(comp_expr.children.len(), 1);
+
+        let stream = quote!(div(child_a, child_b));
+        let comp_expr = parse_comp_expr(stream).unwrap();
+        assert_eq!(comp_expr.ident.to_string(), "div");
+        assert_eq!(comp_expr.fields.len(), 0);
+        assert_eq!(comp_expr.children.len(), 2);
+
         let stream = quote!(SomeComponent { prop_a: value });
         let comp_expr = parse_comp_expr(stream).unwrap();
         assert_eq!(comp_expr.ident.to_string(), "SomeComponent");
