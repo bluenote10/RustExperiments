@@ -11,3 +11,12 @@ pub fn comp(input: TokenStream) -> TokenStream {
 
     proc_macro::TokenStream::from(output)
 }
+
+#[proc_macro]
+pub fn c(input: TokenStream) -> TokenStream {
+    let input = proc_macro2::TokenStream::from(input);
+
+    let output = macro_impl::macro_c(input);
+
+    proc_macro::TokenStream::from(output)
+}

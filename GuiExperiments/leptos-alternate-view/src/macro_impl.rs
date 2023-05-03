@@ -1,11 +1,10 @@
 extern crate proc_macro;
-use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
-use quote::{quote, quote_spanned};
+use proc_macro2::TokenStream;
+use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    spanned::Spanned,
-    Error, Expr, FieldValue, Ident, LitStr, Path, Result, Token,
+    Error, Expr, FieldValue, Ident, Member, Result, Token,
 };
 
 pub fn comp(input: TokenStream) -> TokenStream {
@@ -53,6 +52,16 @@ impl Parse for CompBody {
     }
 }
 
+pub fn macro_c(input: TokenStream) -> TokenStream {
+    match syn::parse2::<CompExpr>(input) {
+        Ok(comp_expr) => transform_comp(comp_expr),
+        Err(err) => {
+            //quote_spanned!(err.span() => compile_error!("Could not parse token stream as expression")).into()
+            err.into_compile_error()
+        }
+    }
+}
+
 #[derive(Debug)]
 struct CompExpr {
     ident: Ident,
@@ -95,6 +104,28 @@ impl Parse for CompExpr {
             _ => Err(Error::new_spanned(expr, "Unsupported expression")),
         }
     }
+}
+
+fn transform_comp(comp_expr: CompExpr) -> TokenStream {
+    let ident = comp_expr.ident;
+    let mut expr: TokenStream = quote!(leptos::leptos_dom::html::#ident(cx)).into();
+
+    for child in comp_expr.children {
+        expr = quote!(#expr.child((cx, #[allow(unused_braces)] #child))).into()
+    }
+
+    // TODO: Understand why the view macro sets `class=...` via `.attr("class", ...)` and not directly
+    // via `.class`. How do multiple class values behave?
+    expr = quote!(#expr.attr("class", (cx, style))).into();
+
+    for field in comp_expr.fields {
+        let Member::Named(ident) = field.member else { continue };
+        let ident = ident.to_string();
+        let value = field.expr;
+        expr = quote!(#expr.attr(#ident, (cx, #value))).into()
+    }
+
+    expr
 }
 
 fn flatten_punctuated<T, P>(punctuated: &Punctuated<T, P>) -> Vec<T>

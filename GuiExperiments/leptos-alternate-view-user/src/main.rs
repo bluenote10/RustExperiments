@@ -1,5 +1,5 @@
 use leptos::*;
-use leptos_alternate_view::comp;
+use leptos_alternate_view::{c, comp};
 
 /*
 #[component]
@@ -94,4 +94,16 @@ fn main() {
             },
         }
     );
+
+    log!("Mounting to body...");
+
+    mount_to_body(|cx| {
+        let style = "style";
+        c![div(
+            // children
+            "Hello World",
+            c![p("paragraph")],
+            c![p("paragraph")],
+        )]
+    });
 }
