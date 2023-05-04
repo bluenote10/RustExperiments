@@ -9,7 +9,7 @@ edition = "2021"
 leptos = "0.2.4"
 stylers = "0.3.1"
 wasm-bindgen = "0.2"
-leptos-alternate-view = { path = "../leptos-alternate-view" }
+leptos-alternate-view = { path = "../leptos-alternate-view/alternate_dsl" }
 
 [dependencies.web-sys]
 version = "0.3"
