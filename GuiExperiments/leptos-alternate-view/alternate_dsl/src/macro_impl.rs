@@ -138,6 +138,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     fn parse_comp_body(input: TokenStream) -> Result<CompBody> {
         syn::parse2::<CompBody>(input)
@@ -201,5 +202,26 @@ mod test {
         assert_eq!(comp_expr.ident.to_string(), "SomeComponent");
         assert_eq!(comp_expr.fields.len(), 1);
         assert_eq!(comp_expr.children.len(), 2);
+    }
+
+    #[test]
+    fn test_macro_c() {
+        let input = quote!(div(child));
+        let output = macro_c(input);
+        let output_expected = quote! {
+            leptos::leptos_dom::html::div(cx)
+                .child((cx, #[allow(unused_braces)] child))
+                .attr("class", (cx, style))
+        };
+        assert_eq!(prettify(output), prettify(output_expected));
+    }
+
+    // https://stackoverflow.com/a/74360109/1804173
+    fn prettify(stream: TokenStream) -> String {
+        let wrapped = quote!(
+            fn wrapped() { #stream }
+        );
+        let file = syn::parse_file(&wrapped.to_string()).unwrap();
+        prettyplease::unparse(&file)
     }
 }

@@ -14,3 +14,7 @@ proc-macro = true
 proc-macro2 = "*"
 quote = "*"
 syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
+
+[dev-dependencies]
+pretty_assertions = "1"
+prettyplease = "0.2"
