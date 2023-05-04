@@ -108,24 +108,47 @@ impl Parse for CompExpr {
 
 fn transform_comp(comp_expr: CompExpr) -> TokenStream {
     let ident = comp_expr.ident;
-    let mut expr: TokenStream = quote!(leptos::leptos_dom::html::#ident(cx)).into();
+    let is_element = ident.to_string().chars().next().unwrap().is_lowercase();
 
-    for child in comp_expr.children {
-        expr = quote!(#expr.child((cx, #[allow(unused_braces)] #child))).into()
+    if is_element {
+        let mut expr: TokenStream = quote!(leptos::leptos_dom::html::#ident(cx));
+
+        for child in comp_expr.children {
+            expr = quote!(#expr.child((cx, #[allow(unused_braces)] #child)))
+        }
+
+        // TODO: Understand why the view macro sets `class=...` via `.attr("class", ...)` and not directly
+        // via `.class`. How do multiple class values behave?
+        expr = quote!(#expr.attr("class", (cx, style)));
+
+        for field in comp_expr.fields {
+            let Member::Named(ident) = field.member else { continue };
+            let ident = ident.to_string();
+            let value = field.expr;
+            expr = quote!(#expr.attr(#ident, (cx, #value)))
+        }
+
+        expr
+    } else {
+        let props = Ident::new(&format!("{}Props", ident.to_string()), ident.span());
+        let mut prop_builder_expr: TokenStream = quote!( #props::builder() );
+
+        for field in comp_expr.fields {
+            let Member::Named(ident) = field.member else { continue };
+            let prop = ident;
+            let value = field.expr;
+            prop_builder_expr = quote!(#prop_builder_expr.#prop(#value))
+        }
+        prop_builder_expr = quote!(#prop_builder_expr.build());
+
+        /*
+        for child in comp_expr.children {
+            expr = quote!(#expr.child((cx, #[allow(unused_braces)] #child))).into()
+        }
+        */
+
+        quote!( #ident(cx, #prop_builder_expr)).into()
     }
-
-    // TODO: Understand why the view macro sets `class=...` via `.attr("class", ...)` and not directly
-    // via `.class`. How do multiple class values behave?
-    expr = quote!(#expr.attr("class", (cx, style))).into();
-
-    for field in comp_expr.fields {
-        let Member::Named(ident) = field.member else { continue };
-        let ident = ident.to_string();
-        let value = field.expr;
-        expr = quote!(#expr.attr(#ident, (cx, #value))).into()
-    }
-
-    expr
 }
 
 fn flatten_punctuated<T, P>(punctuated: &Punctuated<T, P>) -> Vec<T>
@@ -205,7 +228,7 @@ mod test {
     }
 
     #[test]
-    fn test_macro_c() {
+    fn test_macro_c_element() {
         let input = quote!(div(child));
         let output = macro_c(input);
         let output_expected = quote! {
@@ -216,12 +239,30 @@ mod test {
         assert_eq!(prettify(output), prettify(output_expected));
     }
 
+    #[test]
+    fn test_macro_c_component() {
+        let input = quote!(Main { some_int: 42 });
+        let output = macro_c(input);
+        let output_expected = quote! {
+            Main(cx, MainProps::builder().some_int(42).build())
+        };
+        assert_eq!(prettify(output), prettify(output_expected));
+    }
+
     // https://stackoverflow.com/a/74360109/1804173
     fn prettify(stream: TokenStream) -> String {
         let wrapped = quote!(
             fn wrapped() { #stream }
         );
-        let file = syn::parse_file(&wrapped.to_string()).unwrap();
-        prettyplease::unparse(&file)
+        match syn::parse_file(&wrapped.to_string()) {
+            Ok(file) => prettyplease::unparse(&file),
+            Err(err) => {
+                panic!(
+                    "Failed to parse token stream: {}; input was:\n{}",
+                    err,
+                    wrapped.to_string()
+                );
+            }
+        }
     }
 }
