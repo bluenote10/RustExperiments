@@ -111,10 +111,13 @@ fn transform_comp(comp_expr: CompExpr) -> TokenStream {
     let is_element = ident.to_string().chars().next().unwrap().is_lowercase();
 
     if is_element {
-        let mut expr: TokenStream = quote!(leptos::leptos_dom::html::#ident(cx));
+        let mut expr: TokenStream = quote!(::leptos::leptos_dom::html::#ident(cx));
 
         for child in comp_expr.children {
-            expr = quote!(#expr.child((cx, #[allow(unused_braces)] #child)))
+            // Leptos seems to generate an `#[allow(unused_braces)]` before the child expressions,
+            // but I'm not sure if this is needed when using the alternate macro.
+            // expr = quote!(#expr.child((cx, #[allow(unused_braces)] #child)))
+            expr = quote!(#expr.child((cx, #child)))
         }
 
         // TODO: Understand why the view macro sets `class=...` via `.attr("class", ...)` and not directly
@@ -123,9 +126,16 @@ fn transform_comp(comp_expr: CompExpr) -> TokenStream {
 
         for field in comp_expr.fields {
             let Member::Named(ident) = field.member else { continue };
-            let ident = ident.to_string();
+            let ident_str = ident.to_string();
             let value = field.expr;
-            expr = quote!(#expr.attr(#ident, (cx, #value)))
+            if ident_str == "on_mount" {
+                expr = quote!(#expr.on_mount(#value))
+            } else if ident_str.starts_with("on_") {
+                let event_ident = Ident::new(&format!("{}Props", &ident_str[3..]), ident.span());
+                expr = quote!(#expr.on(::leptos::ev::#event_ident, #value))
+            } else {
+                expr = quote!(#expr.attr(#ident_str, (cx, #value)))
+            }
         }
 
         expr
@@ -159,8 +169,9 @@ where
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
+    use crate::test_utils::compare;
     use pretty_assertions::assert_eq;
 
     fn parse_comp_body(input: TokenStream) -> Result<CompBody> {
@@ -228,41 +239,49 @@ mod test {
     }
 
     #[test]
-    fn test_macro_c_element() {
+    fn test_macro_element_basic() {
         let input = quote!(div(child));
         let output = macro_c(input);
         let output_expected = quote! {
-            leptos::leptos_dom::html::div(cx)
-                .child((cx, #[allow(unused_braces)] child))
+            ::leptos::leptos_dom::html::div(cx)
+                .child((cx, child))
                 .attr("class", (cx, style))
         };
-        assert_eq!(prettify(output), prettify(output_expected));
+        compare!(output, output_expected);
     }
 
     #[test]
-    fn test_macro_c_component() {
+    fn test_macro_element_with_event_handler() {
+        let input = quote!(button { on_click: |_| {} }("Click me"));
+        let output = macro_c(input);
+        let output_expected = quote! {
+            ::leptos::leptos_dom::html::button(cx)
+                .child((cx, "Click me"))
+                .attr("class", (cx, style))
+                .on(::leptos::ev::clickProps, |_| {})
+        };
+        compare!(output, output_expected);
+    }
+
+    #[test]
+    fn test_macro_element_with_on_mount_handler() {
+        let input = quote!(div { on_mount: |_| {} });
+        let output = macro_c(input);
+        let output_expected = quote! {
+            ::leptos::leptos_dom::html::div(cx)
+                .attr("class", (cx, style))
+                .on_mount(|_| {})
+        };
+        compare!(output, output_expected);
+    }
+
+    #[test]
+    fn test_macro_component_basic() {
         let input = quote!(Main { some_int: 42 });
         let output = macro_c(input);
         let output_expected = quote! {
             Main(cx, MainProps::builder().some_int(42).build())
         };
-        assert_eq!(prettify(output), prettify(output_expected));
-    }
-
-    // https://stackoverflow.com/a/74360109/1804173
-    fn prettify(stream: TokenStream) -> String {
-        let wrapped = quote!(
-            fn wrapped() { #stream }
-        );
-        match syn::parse_file(&wrapped.to_string()) {
-            Ok(file) => prettyplease::unparse(&file),
-            Err(err) => {
-                panic!(
-                    "Failed to parse token stream: {}; input was:\n{}",
-                    err,
-                    wrapped.to_string()
-                );
-            }
-        }
+        compare!(output, output_expected);
     }
 }
