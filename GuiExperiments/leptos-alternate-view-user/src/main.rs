@@ -1,109 +1,28 @@
 use leptos::*;
-use leptos_alternate_view::{c, comp};
+use leptos_alternate_macro::{c, fragment};
 
-/*
 #[component]
-fn Main(cx: Scope) -> impl IntoView {
-    comp!(foo);
+fn Basic(cx: Scope) -> impl IntoView {
+    let style = "some-class";
 
-    view! {
-        cx,
-        <div>
-            "Hello world"
-        </div>
-    }
+    c![div(
+        // children
+        "Hello World",
+        c![p("paragraph")],
+        c![br],
+        c![p("paragraph")],
+    )]
+}
+
+#[component]
+fn WithFragments(cx: Scope) -> impl IntoView {
+    let style = "some-class";
+
+    fragment![c!(p("first")), c!(p("second")),]
 }
 
 fn main() {
     log!("Mounting to body...");
 
-    mount_to_body(|cx| {
-        view! {
-            cx,
-            <Main />
-        }
-    })
-}
-*/
-
-/*
-fn leptos_test() {
-    mount_to_body(|cx| {
-        view! { cx,
-            <div class="foo">
-                <p>"Hello"</p>
-                <p>"World"</p>
-                <button on:click=|_| {}>"Click me"</button>
-            </div>
-        }
-    })
-}
-*/
-
-fn main() {
-    //comp!((foo, bar));
-    //comp!(foo);
-
-    //comp!(foo, bar);
-    //comp! {foo, bar};
-
-    let style = "foo";
-
-    comp![div { class: "foo" }(
-        comp![p("Hello")],
-        comp![p("World")],
-        comp![button { on_click: |_| {} }("World")],
-    )];
-
-    comp!(-div { class: "foo" }(
-        -p("Hello"),
-        -p("Hello"),
-        -p("World"),
-        -button { on_click: |_| {} }("World"),
-    ));
-
-    comp!(
-        h("text"),
-        r#div {}("text"),
-        ComponentWithoutChildren { name: "foo" },
-        ComponentWithChildren { name: "foo" }(span("hello"), span("world")),
-        div {
-            on_error: || {
-                asjklfaklsdhfklasjdhflksajdhfklajsdhflkjsahdklfjhaskldjfhaklsjfdhlaksjdhflkajsfdh
-            },
-        }(
-            div {
-                on_error: || {
-                    asjklfaklsdhfklasjdhflksajdhfklajsdhflkjsahdklfjhaskldjfhaklsjfdhlaksjdhflkajsfdh
-                },
-            },
-            div {
-                on_error: || {
-                    asjklfaklsdhfklasjdhflksajdhfklajsdhflkjsahdklfjhaskldjfhaklsjfdhlaksjdhflkajsfdh
-                },
-            },
-        ),
-        div {
-            on_error: || {
-                asjklfaklsdhfklasjdhflksajdhfklajsdhflkjsahdklfjhaskldjfhaklsjfdhlaksjdhflkajsfdh
-            },
-        },
-        div {
-            on_error: || {
-                asjklfaklsdhfklasjdhflksajdhfklajsdhflkjsahdklfjhaskldjfhaklsjfdhlaksjdhflkajsfdh
-            },
-        }
-    );
-
-    log!("Mounting to body...");
-
-    mount_to_body(|cx| {
-        let style = "style";
-        c![div(
-            // children
-            "Hello World",
-            c![p("paragraph")],
-            c![p("paragraph")],
-        )]
-    });
+    mount_to_body(|cx| fragment!(c!(Basic {}), c!(WithFragments {}),));
 }
