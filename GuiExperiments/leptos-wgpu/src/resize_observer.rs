@@ -18,6 +18,7 @@ pub struct ResizeEvent {
     pub inline_size: f64,
 }
 
+#[allow(dead_code)]
 #[derive(Copy, Clone, Debug)]
 pub enum ResizeEventMode {
     BorderBoxSize,

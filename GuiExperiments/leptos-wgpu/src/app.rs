@@ -19,6 +19,7 @@ fn Main(cx: Scope) -> impl IntoView {
 }
 
 pub fn run_app() {
+    console_error_panic_hook::set_once();
     log!("Mounting to body...");
 
     mount_to_body(|cx| {

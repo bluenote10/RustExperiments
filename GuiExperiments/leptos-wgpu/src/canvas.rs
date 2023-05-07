@@ -6,7 +6,7 @@ use stylers::style;
 use web_sys::HtmlCanvasElement;
 
 use crate::resize_observer::{use_resize_observer, ResizeEventMode};
-use crate::wgpu_render::render_triangle;
+use crate::wgpu_render::render_msaa_line;
 
 pub async fn async_test_func() {
     log!("In async test func");
@@ -44,7 +44,7 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
             let canvas: &HtmlCanvasElement = canvas.deref();
             log!("{:?} {} {}", canvas, canvas.width(), canvas.height());
             async_test_func().await;
-            render_triangle(&canvas).await;
+            render_msaa_line(&canvas).await;
         });
     };
 

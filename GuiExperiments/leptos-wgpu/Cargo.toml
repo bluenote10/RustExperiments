@@ -6,6 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+bytemuck = { version = "1.13.1", features = ["derive"] }
+console_error_panic_hook = "0.1"
 leptos = "0.2.4"
 js-sys = "0.3"
 stylers = "0.3.1"
