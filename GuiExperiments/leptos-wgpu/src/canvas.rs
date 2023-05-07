@@ -96,6 +96,22 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
         });
 
         /*
+        spawn_local(async move {
+            let renderer = renderer.clone();
+            let opt_future = renderer.with_value(async |renderer| {
+                if let Some(renderer) = renderer {
+                    Some(renderer.render().await)
+                } else {
+                    None
+                }
+            });
+            if let Some(future) = opt_future {
+                future.await;
+            }
+        });
+        */
+
+        /*
         let async_render = || async move {
             renderer.with_value(|renderer| {
                 if let Some(renderer) = renderer {

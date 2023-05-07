@@ -1,7 +1,7 @@
-use std::{borrow::Cow, iter};
+use std::{borrow::Cow, future::Future, iter};
 
 use bytemuck::{Pod, Zeroable};
-use leptos::log;
+use leptos::{log, spawn_local};
 use web_sys::HtmlCanvasElement;
 use wgpu::util::DeviceExt;
 
@@ -382,4 +382,20 @@ impl Renderer {
     pub async fn render(&self) {
         render_msaa_line(&self.canvas).await;
     }
+    /*
+    pub fn render<'a>(&'a self) -> impl Future<Output = ()> + 'a {
+        async {
+            render_msaa_line(&self.canvas).await;
+        }
+    }
+    */
+    /*
+    pub fn render(&self) {
+        // This is not possible because spawn_local requires a `Future<Output = ()> + 'static`
+        // and &self lives shorter that 'static.
+        spawn_local(async {
+            render_msaa_line(&self.canvas).await;
+        });
+    }
+    */
 }
