@@ -370,3 +370,16 @@ fn create_multisampled_framebuffer(
         .create_texture(multisampled_frame_descriptor)
         .create_view(&wgpu::TextureViewDescriptor::default())
 }
+
+pub struct Renderer {
+    canvas: HtmlCanvasElement,
+}
+
+impl Renderer {
+    pub fn new(canvas: HtmlCanvasElement) -> Self {
+        Self { canvas }
+    }
+    pub async fn render(&self) {
+        render_msaa_line(&self.canvas).await;
+    }
+}
