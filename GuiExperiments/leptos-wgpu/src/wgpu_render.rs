@@ -380,6 +380,7 @@ impl Renderer {
         Self { canvas }
     }
     pub async fn render(&self) {
+        log!("Re-rendering2...");
         render_msaa_line(&self.canvas).await;
     }
     /*
