@@ -33,22 +33,20 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
                 .set_property("height", &format!("{}px", ev.block_size as u32,))
                 .expect("Failed to set canvas size");
 
-            let canvas: &HtmlCanvasElement = canvas.deref();
-            *renderer.borrow_mut() = Some(Renderer::new(canvas.clone()));
+            let renderer = renderer.clone();
+            spawn_local(async move {
+                let canvas: &HtmlCanvasElement = canvas.deref();
+                *renderer.borrow_mut() = Some(Renderer::new(canvas.clone()).await);
+            });
         }
     });
 
     let renderer = renderer_orig.clone();
     let render = move |_| {
-        let renderer = renderer.clone();
-        spawn_local(async move {
-            let renderer = renderer.borrow();
-            if let Some(ref renderer) = *renderer {
-                Some(renderer.render().await)
-            } else {
-                None
-            };
-        });
+        let renderer = renderer.borrow();
+        if let Some(ref renderer) = *renderer {
+            renderer.render();
+        };
     };
 
     view! {
