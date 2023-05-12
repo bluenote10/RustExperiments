@@ -321,6 +321,7 @@ fn create_bundle(
         },
         multiview: None,
     });
+
     let mut encoder = device.create_render_bundle_encoder(&wgpu::RenderBundleEncoderDescriptor {
         label: None,
         color_formats: &[Some(config.format)],
@@ -362,6 +363,107 @@ fn create_multisampled_framebuffer(
         .create_view(&wgpu::TextureViewDescriptor::default())
 }
 
+struct MsaaPipeline {
+    bundle: wgpu::RenderBundle,
+    multisampled_framebuffer: wgpu::TextureView,
+    sample_count: u32,
+}
+
+impl MsaaPipeline {
+    pub fn new(
+        adapter: &wgpu::Adapter,
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+        vertex_data: Vec<Vertex>,
+    ) -> Self {
+        let sample_count = {
+            let sample_flags = adapter.get_texture_format_features(config.format).flags;
+            let max_sample_count = {
+                if sample_flags.contains(wgpu::TextureFormatFeatureFlags::MULTISAMPLE_X8) {
+                    8
+                } else if sample_flags.contains(wgpu::TextureFormatFeatureFlags::MULTISAMPLE_X4) {
+                    4
+                } else if sample_flags.contains(wgpu::TextureFormatFeatureFlags::MULTISAMPLE_X2) {
+                    2
+                } else {
+                    1
+                }
+            };
+            max_sample_count
+        };
+        log!("Using MSAA sample count: {}", sample_count);
+
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(&vertex_data),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let vertex_count = vertex_data.len() as u32;
+
+        let bundle = create_bundle(&device, &config, sample_count, &vertex_buffer, vertex_count);
+        let multisampled_framebuffer =
+            create_multisampled_framebuffer(&device, &config, sample_count);
+
+        MsaaPipeline {
+            bundle,
+            multisampled_framebuffer,
+            sample_count,
+        }
+    }
+
+    fn render(&self, device: &wgpu::Device, surface: &wgpu::Surface, queue: &wgpu::Queue) {
+        let frame = surface
+            .get_current_texture()
+            .expect("Failed to acquire next swap chain texture");
+
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        let clear_color = wgpu::Color {
+            r: 0.99,
+            g: 0.99,
+            b: 0.99,
+            a: 1.0,
+        };
+        let rpass_color_attachment = if self.sample_count == 1 {
+            wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(clear_color),
+                    store: true,
+                },
+            }
+        } else {
+            wgpu::RenderPassColorAttachment {
+                view: &self.multisampled_framebuffer,
+                resolve_target: Some(&view),
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(clear_color),
+                    // Storing pre-resolve MSAA data is unnecessary if it isn't used later.
+                    // On tile-based GPU, avoid store can reduce your app's memory footprint.
+                    store: false,
+                },
+            }
+        };
+
+        encoder
+            .begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(rpass_color_attachment)],
+                depth_stencil_attachment: None,
+            })
+            .execute_bundles(iter::once(&self.bundle));
+
+        queue.submit(iter::once(encoder.finish()));
+        frame.present();
+    }
+}
+
 pub struct Renderer {
     // canvas: HtmlCanvasElement,
     adapter: wgpu::Adapter,
@@ -369,6 +471,7 @@ pub struct Renderer {
     config: wgpu::SurfaceConfiguration,
     device: wgpu::Device,
     queue: wgpu::Queue,
+    msaa_pipeline: Option<MsaaPipeline>,
 }
 
 impl Renderer {
@@ -398,7 +501,6 @@ impl Renderer {
             .get_default_config(&adapter, size.width, size.height)
             .expect("Surface isn't supported by the adapter.");
 
-        // Create the logical device and command queue
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
@@ -420,37 +522,11 @@ impl Renderer {
             device,
             queue,
             config,
+            msaa_pipeline: None,
         }
     }
 
-    pub fn render(&self) {
-        log!("Re-rendering...");
-
-        let Self {
-            adapter,
-            surface,
-            device,
-            queue,
-            config,
-        } = &self;
-
-        let sample_count = {
-            let sample_flags = adapter.get_texture_format_features(config.format).flags;
-            let max_sample_count = {
-                if sample_flags.contains(wgpu::TextureFormatFeatureFlags::MULTISAMPLE_X8) {
-                    8
-                } else if sample_flags.contains(wgpu::TextureFormatFeatureFlags::MULTISAMPLE_X4) {
-                    4
-                } else if sample_flags.contains(wgpu::TextureFormatFeatureFlags::MULTISAMPLE_X2) {
-                    2
-                } else {
-                    1
-                }
-            };
-            max_sample_count
-        };
-        log!("Using MSAA sample count: {}", sample_count);
-
+    pub fn set_render_data(&mut self) {
         let mut vertex_data = vec![];
 
         let max = 50;
@@ -467,70 +543,22 @@ impl Renderer {
             });
         }
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertex_data),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-        let vertex_count = vertex_data.len() as u32;
+        let msaa_pipeline =
+            MsaaPipeline::new(&self.adapter, &self.device, &self.config, vertex_data);
+        self.msaa_pipeline = Some(msaa_pipeline);
+    }
 
-        let bundle = create_bundle(&device, &config, sample_count, &vertex_buffer, vertex_count);
-        let multisampled_framebuffer =
-            create_multisampled_framebuffer(&device, &config, sample_count);
+    pub fn render(&self) {
+        log!("Re-rendering...");
 
         // This was taken from the Event::WindowEvent branch of the sample code.
         // Looks like it is crucial that this runs before any drawing happens.
-        surface.configure(&device, &config);
+        // TODO: This should be moved into a resize callback. For now call in each
+        // rendering (even though we don't update size changes here anyway...)
+        self.surface.configure(&self.device, &self.config);
 
-        // This was taken from the Event::RedrawRequested branch of the sample code.
-        let frame = surface
-            .get_current_texture()
-            .expect("Failed to acquire next swap chain texture");
-        let view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        {
-            let clear_color = wgpu::Color {
-                r: 0.99,
-                g: 0.99,
-                b: 0.99,
-                a: 1.0,
-            };
-            let rpass_color_attachment = if sample_count == 1 {
-                wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(clear_color),
-                        store: true,
-                    },
-                }
-            } else {
-                wgpu::RenderPassColorAttachment {
-                    view: &multisampled_framebuffer,
-                    resolve_target: Some(&view),
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(clear_color),
-                        // Storing pre-resolve MSAA data is unnecessary if it isn't used later.
-                        // On tile-based GPU, avoid store can reduce your app's memory footprint.
-                        store: false,
-                    },
-                }
-            };
-
-            encoder
-                .begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: None,
-                    color_attachments: &[Some(rpass_color_attachment)],
-                    depth_stencil_attachment: None,
-                })
-                .execute_bundles(iter::once(&bundle));
+        if let Some(msaa_pipeline) = self.msaa_pipeline.as_ref() {
+            msaa_pipeline.render(&self.device, &self.surface, &self.queue);
         }
-
-        queue.submit(iter::once(encoder.finish()));
-        frame.present();
     }
 }

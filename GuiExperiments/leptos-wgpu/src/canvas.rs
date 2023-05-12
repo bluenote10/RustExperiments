@@ -43,8 +43,9 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
 
     let renderer = renderer_orig.clone();
     let render = move |_| {
-        let renderer = renderer.borrow();
-        if let Some(ref renderer) = *renderer {
+        let mut renderer = renderer.borrow_mut();
+        if let Some(ref mut renderer) = *renderer {
+            renderer.set_render_data();
             renderer.render();
         };
     };
