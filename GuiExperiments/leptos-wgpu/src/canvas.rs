@@ -5,7 +5,7 @@ use std::rc::Rc;
 use leptos::html::{Canvas, Div};
 use leptos::*;
 use stylers::style;
-use web_sys::HtmlCanvasElement;
+use web_sys::{HtmlCanvasElement, MouseEvent};
 
 use crate::resize_observer::{use_resize_observer, ResizeEventMode};
 use crate::wgpu_render::Renderer;
@@ -50,6 +50,10 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
         };
     };
 
+    let on_mousemove = move |event: MouseEvent| {
+        log!("{:?}", event);
+    };
+
     view! {
         cx,
         class = STYLE,
@@ -57,7 +61,7 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
             {
                 view! { cx, class = STYLE,
                     <div>
-                        <canvas node_ref=canvas />
+                        <canvas node_ref=canvas on:mousemove=on_mousemove/>
                     </div>
                 }.on_mount(on_mount)
             }

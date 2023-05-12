@@ -120,8 +120,20 @@ pub async fn render_triangle(canvas: &HtmlCanvasElement) {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Vertex {
-    _pos: [f32; 2],
-    _color: [f32; 4],
+    pos: [f32; 2],
+    color: [f32; 4],
+}
+
+impl Vertex {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        const ATTRIBUTES: [wgpu::VertexAttribute; 2] =
+            wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4];
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &ATTRIBUTES,
+        }
+    }
 }
 
 /// Equivalent of `winit::PhysicalSize<u32>` that gets returned by `window.inner_size()`.
@@ -197,12 +209,12 @@ pub async fn render_msaa_line(canvas: &HtmlCanvasElement) {
         let percent = i as f32 / max as f32;
         let (sin, cos) = (percent * 2.0 * std::f32::consts::PI).sin_cos();
         vertex_data.push(Vertex {
-            _pos: [0.0, 0.0],
-            _color: [1.0, -sin, cos, 1.0],
+            pos: [0.0, 0.0],
+            color: [1.0, -sin, cos, 1.0],
         });
         vertex_data.push(Vertex {
-            _pos: [1.0 * cos, 1.0 * sin],
-            _color: [sin, -cos, 1.0, 1.0],
+            pos: [1.0 * cos, 1.0 * sin],
+            color: [sin, -cos, 1.0, 1.0],
         });
     }
 
@@ -298,11 +310,7 @@ fn create_bundle(
         vertex: wgpu::VertexState {
             module: shader,
             entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4],
-            }],
+            buffers: &[Vertex::desc()],
         },
         fragment: Some(wgpu::FragmentState {
             module: shader,
@@ -534,12 +542,12 @@ impl Renderer {
             let percent = i as f32 / max as f32;
             let (sin, cos) = (percent * 2.0 * std::f32::consts::PI).sin_cos();
             vertex_data.push(Vertex {
-                _pos: [0.0, 0.0],
-                _color: [1.0, -sin, cos, 1.0],
+                pos: [0.0, 0.0],
+                color: [1.0, -sin, cos, 1.0],
             });
             vertex_data.push(Vertex {
-                _pos: [1.0 * cos, 1.0 * sin],
-                _color: [sin, -cos, 1.0, 1.0],
+                pos: [1.0 * cos, 1.0 * sin],
+                color: [sin, -cos, 1.0, 1.0],
             });
         }
 
