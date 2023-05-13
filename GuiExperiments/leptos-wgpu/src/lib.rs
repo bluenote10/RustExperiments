@@ -1,4 +1,4 @@
-mod utils;
+mod math_utils;
 
 #[cfg(target_arch = "wasm32")]
 mod web;

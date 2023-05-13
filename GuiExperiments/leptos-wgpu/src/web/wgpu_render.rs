@@ -5,6 +5,8 @@ use leptos::log;
 use web_sys::HtmlCanvasElement;
 use wgpu::util::DeviceExt;
 
+use crate::math_utils::get_pixel_to_ndc_transform;
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Vertex {
@@ -42,10 +44,16 @@ struct ProjectionUniform {
 }
 
 impl ProjectionUniform {
-    fn new() -> Self {
+    fn new(w: u32, h: u32) -> Self {
+        let tx = get_pixel_to_ndc_transform(w, false);
+        let ty = get_pixel_to_ndc_transform(h, true);
+
         use cgmath::SquareMatrix;
         let mut m = cgmath::Matrix3::identity();
-        m.z[1] = -1.0;
+        m.x[0] = tx.m;
+        m.y[1] = ty.m;
+        m.z[0] = tx.c;
+        m.z[1] = ty.c;
         Self {
             // Ideally, this should work, but currently not possible due to required padding.
             // view_proj: m.into(),
@@ -107,11 +115,13 @@ impl MsaaPipeline {
     }
 
     fn render(&self, device: &wgpu::Device, surface: &wgpu::Surface, queue: &wgpu::Queue) {
-        let frame = surface
+        // The `surface_texture` is often called `frame` in the examples.
+        let surface_texture = surface
             .get_current_texture()
             .expect("Failed to acquire next swap chain texture");
 
-        let view = frame
+        // Often just called `view` in the examples.
+        let texture_view = surface_texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -126,7 +136,7 @@ impl MsaaPipeline {
         };
         let rpass_color_attachment = if self.sample_count == 1 {
             wgpu::RenderPassColorAttachment {
-                view: &view,
+                view: &texture_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(clear_color),
@@ -136,7 +146,7 @@ impl MsaaPipeline {
         } else {
             wgpu::RenderPassColorAttachment {
                 view: &self.multisampled_framebuffer,
-                resolve_target: Some(&view),
+                resolve_target: Some(&texture_view),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(clear_color),
                     // Storing pre-resolve MSAA data is unnecessary if it isn't used later.
@@ -155,7 +165,7 @@ impl MsaaPipeline {
             .execute_bundles(iter::once(&self.bundle));
 
         queue.submit(iter::once(encoder.finish()));
-        frame.present();
+        surface_texture.present();
     }
 }
 
@@ -166,7 +176,9 @@ fn create_bundle(
     vertex_buffer: &wgpu::Buffer,
     vertex_count: u32,
 ) -> wgpu::RenderBundle {
-    let projection_uniform = ProjectionUniform::new();
+    let w = config.width;
+    let h = config.height;
+    let projection_uniform = ProjectionUniform::new(w, h);
 
     let projection_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Projection Buffer"),
@@ -349,6 +361,7 @@ impl Renderer {
     pub fn set_render_data(&mut self) {
         let mut vertex_data = vec![];
 
+        /*
         let max = 50;
         for i in 0..max {
             let percent = i as f32 / max as f32;
@@ -362,6 +375,23 @@ impl Renderer {
                 color: [sin, -cos, 1.0, 1.0],
             });
         }
+        */
+        vertex_data.push(Vertex {
+            pos: [1.0, 1.0 - 0.5],
+            color: [0.0, 0.0, 0.0, 1.0],
+        });
+        vertex_data.push(Vertex {
+            pos: [1.0, 4.0 + 0.5],
+            color: [0.0, 0.0, 0.0, 1.0],
+        });
+        vertex_data.push(Vertex {
+            pos: [1.0 - 0.5, 6.0],
+            color: [0.0, 0.0, 0.0, 1.0],
+        });
+        vertex_data.push(Vertex {
+            pos: [4.0 + 0.5, 6.0],
+            color: [0.0, 0.0, 0.0, 1.0],
+        });
 
         let msaa_pipeline =
             MsaaPipeline::new(&self.adapter, &self.device, &self.config, vertex_data);
