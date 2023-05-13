@@ -7,8 +7,8 @@ use leptos::*;
 use stylers::style;
 use web_sys::{HtmlCanvasElement, MouseEvent};
 
-use crate::resize_observer::{use_resize_observer, ResizeEventMode};
-use crate::wgpu_render::Renderer;
+use crate::web::resize_observer::{use_resize_observer, ResizeEventMode};
+use crate::web::wgpu_render::Renderer;
 
 #[component]
 pub fn CanvasWrapper(cx: Scope) -> impl IntoView {

@@ -44,7 +44,8 @@ struct ProjectionUniform {
 impl ProjectionUniform {
     fn new() -> Self {
         use cgmath::SquareMatrix;
-        let m = cgmath::Matrix3::identity();
+        let mut m = cgmath::Matrix3::identity();
+        m.z[1] = -1.0;
         Self {
             // Ideally, this should work, but currently not possible due to required padding.
             // view_proj: m.into(),
@@ -205,7 +206,7 @@ fn create_bundle(
 
     let shader = &device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shaders/line.wgsl"))),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/line.wgsl"))),
     });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

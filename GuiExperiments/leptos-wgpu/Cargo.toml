@@ -16,6 +16,9 @@ wasm-bindgen = "0.2"
 wgpu = { version = "0.15", features = ["webgl"]}
 cgmath = "0.18.0"
 
+# Currently not used, but perhaps useful later:
+# wasm-bindgen-test = "0.3.35"
+
 [dependencies.web-sys]
 version = "0.3"
 features = [

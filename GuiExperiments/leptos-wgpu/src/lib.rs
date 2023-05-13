@@ -1,7 +1,7 @@
-mod app;
-mod canvas;
-mod resize_observer;
-mod wgpu_examples;
-mod wgpu_render;
+mod utils;
 
-pub use app::run_app;
+#[cfg(target_arch = "wasm32")]
+mod web;
+
+#[cfg(target_arch = "wasm32")]
+pub use web::app::run_app;

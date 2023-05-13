@@ -1,4 +1,4 @@
-use crate::canvas::{CanvasWrapper, CanvasWrapperProps};
+use crate::web::canvas::{CanvasWrapper, CanvasWrapperProps};
 use leptos::*;
 
 #[component]
