@@ -11,3 +11,5 @@ To find out:
 - I don't see type errors (TypeScript) in the console when using `npm run tauri dev`.
 - The communication between the frontend and the backend is not typed at all :(.
   Is it possible to make them type safe and reduce the boilerplate?
+
+EDIT: It looks like this is the purpose of [`tauri-bindgen`](https://github.com/tauri-apps/tauri-bindgen).
