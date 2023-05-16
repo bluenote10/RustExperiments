@@ -5,7 +5,7 @@ use leptos::log;
 use web_sys::HtmlCanvasElement;
 use wgpu::util::DeviceExt;
 
-use crate::math_utils::get_pixel_to_ndc_transform;
+use crate::math_utils::{get_pixel_to_ndc_transform, get_transform};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -44,9 +44,11 @@ struct ProjectionUniform {
 }
 
 impl ProjectionUniform {
-    fn new(w: u32, h: u32) -> Self {
-        let tx = get_pixel_to_ndc_transform(w, false);
-        let ty = get_pixel_to_ndc_transform(h, true);
+    fn new(w: u32, h: u32, dx: i32, dy: i32) -> Self {
+        //let tx = get_pixel_to_ndc_transform(w, false);
+        //let ty = get_pixel_to_ndc_transform(h, true);
+        let tx = get_transform(0.0 + dx as f32, w as f32 + dx as f32, false);
+        let ty = get_transform(0.0 + dy as f32, h as f32 + dy as f32, true);
 
         use cgmath::SquareMatrix;
         let mut m = cgmath::Matrix3::identity();
@@ -69,6 +71,7 @@ impl ProjectionUniform {
 struct MsaaPipeline {
     bundle: wgpu::RenderBundle,
     multisampled_framebuffer: wgpu::TextureView,
+    projection_buffer: wgpu::Buffer,
     sample_count: u32,
 }
 
@@ -103,7 +106,8 @@ impl MsaaPipeline {
         });
         let vertex_count = vertex_data.len() as u32;
 
-        let bundle = create_bundle(&device, &config, sample_count, &vertex_buffer, vertex_count);
+        let (bundle, projection_buffer) =
+            create_bundle(&device, &config, sample_count, &vertex_buffer, vertex_count);
         let multisampled_framebuffer =
             create_multisampled_framebuffer(&device, &config, sample_count);
 
@@ -111,10 +115,27 @@ impl MsaaPipeline {
             bundle,
             multisampled_framebuffer,
             sample_count,
+            projection_buffer,
         }
     }
 
-    fn render(&self, device: &wgpu::Device, surface: &wgpu::Surface, queue: &wgpu::Queue) {
+    fn render(
+        &self,
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+        surface: &wgpu::Surface,
+        queue: &wgpu::Queue,
+    ) {
+        let w = config.width;
+        let h = config.height;
+        let projection_uniform = ProjectionUniform::new(w, h, -20, -20);
+
+        queue.write_buffer(
+            &self.projection_buffer,
+            0,
+            bytemuck::cast_slice(&[projection_uniform]),
+        );
+
         // The `surface_texture` is often called `frame` in the examples.
         let surface_texture = surface
             .get_current_texture()
@@ -175,10 +196,10 @@ fn create_bundle(
     sample_count: u32,
     vertex_buffer: &wgpu::Buffer,
     vertex_count: u32,
-) -> wgpu::RenderBundle {
+) -> (wgpu::RenderBundle, wgpu::Buffer) {
     let w = config.width;
     let h = config.height;
-    let projection_uniform = ProjectionUniform::new(w, h);
+    let projection_uniform = ProjectionUniform::new(w, h, 10, 10);
 
     let projection_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Projection Buffer"),
@@ -258,9 +279,11 @@ fn create_bundle(
     encoder.set_bind_group(0, &projection_bind_group, &[]);
     encoder.set_vertex_buffer(0, vertex_buffer.slice(..));
     encoder.draw(0..vertex_count, 0..1);
-    encoder.finish(&wgpu::RenderBundleDescriptor {
+    let render_bundle = encoder.finish(&wgpu::RenderBundleDescriptor {
         label: Some("main"),
-    })
+    });
+
+    (render_bundle, projection_buffer)
 }
 
 fn create_multisampled_framebuffer(
@@ -408,7 +431,7 @@ impl Renderer {
         self.surface.configure(&self.device, &self.config);
 
         if let Some(msaa_pipeline) = self.msaa_pipeline.as_ref() {
-            msaa_pipeline.render(&self.device, &self.surface, &self.queue);
+            msaa_pipeline.render(&self.device, &self.config, &self.surface, &self.queue);
         }
     }
 }

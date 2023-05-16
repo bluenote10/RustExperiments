@@ -43,6 +43,15 @@ pub fn get_pixel_to_ndc_transform(size: u32, invert: bool) -> LinearTransform1D 
     LinearTransform1D { m, c }
 }
 
+pub fn get_transform(from: f32, upto: f32, invert: bool) -> LinearTransform1D {
+    let (x1, x2) = (from, upto);
+    let (y1, y2) = if !invert { (-1.0, 1.0) } else { (1.0, -1.0) };
+    let denom = x1 - x2;
+    let m = (y1 - y2) / denom;
+    let c = (x1 * y2 - x2 * y1) / denom;
+    LinearTransform1D { m, c }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
