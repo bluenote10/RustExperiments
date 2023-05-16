@@ -25,6 +25,7 @@ features = [
     "CanvasRenderingContext2d",
     "console",
     "CssStyleDeclaration",
+    "DomRect",  # for get_bounding_client_rect
     "Window",
     "Document",
     "Element",

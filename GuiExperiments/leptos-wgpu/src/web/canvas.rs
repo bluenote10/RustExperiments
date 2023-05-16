@@ -50,8 +50,24 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
         };
     };
 
+    let renderer = renderer_orig.clone();
     let on_mousemove = move |event: MouseEvent| {
-        log!("{:?}", event);
+        let mut renderer = renderer.borrow_mut();
+        if let Some(canvas) = canvas.get() {
+            // https://stackoverflow.com/a/2614472/1804173
+            let w = canvas.width();
+            let h = canvas.height();
+            let canvas: &HtmlCanvasElement = canvas.deref();
+            let rect = canvas.get_bounding_client_rect();
+
+            let x = event.client_x() - rect.x() as i32;
+            let y = event.client_y() - rect.y() as i32;
+            log!("{x} {y}");
+            if let Some(ref mut renderer) = *renderer {
+                renderer.set_transform(x + 30, y + 30, w, h);
+                renderer.render();
+            };
+        }
     };
 
     view! {
@@ -72,7 +88,7 @@ pub fn CanvasWrapper(cx: Scope) -> impl IntoView {
 
 const STYLE: &str = style! {"Canvas",
     div {
-        margin: 10px;
+        margin: 20px;
         height: 600px;
     }
 

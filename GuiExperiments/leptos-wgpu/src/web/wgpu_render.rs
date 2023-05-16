@@ -119,6 +119,16 @@ impl MsaaPipeline {
         }
     }
 
+    pub fn set_transform(&self, dx: i32, dy: i32, w: u32, h: u32, queue: &wgpu::Queue) {
+        let projection_uniform = ProjectionUniform::new(w, h, -dx, -dy);
+
+        queue.write_buffer(
+            &self.projection_buffer,
+            0,
+            bytemuck::cast_slice(&[projection_uniform]),
+        );
+    }
+
     fn render(
         &self,
         device: &wgpu::Device,
@@ -126,6 +136,7 @@ impl MsaaPipeline {
         surface: &wgpu::Surface,
         queue: &wgpu::Queue,
     ) {
+        /*
         let w = config.width;
         let h = config.height;
         let projection_uniform = ProjectionUniform::new(w, h, -20, -20);
@@ -135,6 +146,7 @@ impl MsaaPipeline {
             0,
             bytemuck::cast_slice(&[projection_uniform]),
         );
+        */
 
         // The `surface_texture` is often called `frame` in the examples.
         let surface_texture = surface
@@ -419,6 +431,12 @@ impl Renderer {
         let msaa_pipeline =
             MsaaPipeline::new(&self.adapter, &self.device, &self.config, vertex_data);
         self.msaa_pipeline = Some(msaa_pipeline);
+    }
+
+    pub fn set_transform(&self, dx: i32, dy: i32, w: u32, h: u32) {
+        if let Some(msaa_pipeline) = self.msaa_pipeline.as_ref() {
+            msaa_pipeline.set_transform(dx, dy, w, h, &self.queue);
+        }
     }
 
     pub fn render(&self) {
