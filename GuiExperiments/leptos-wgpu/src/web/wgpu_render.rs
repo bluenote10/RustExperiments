@@ -44,11 +44,25 @@ struct ProjectionUniform {
 }
 
 impl ProjectionUniform {
-    fn new(w: u32, h: u32, dx: i32, dy: i32) -> Self {
+    fn identity() -> Self {
+        use cgmath::SquareMatrix;
+        let mut m = cgmath::Matrix3::identity();
+        Self {
+            // Ideally, this should work, but currently not possible due to required padding.
+            // view_proj: m.into(),
+            view_proj: [
+                [m.x[0], m.x[1], m.x[2], 0.0],
+                [m.y[0], m.y[1], m.y[2], 0.0],
+                [m.z[0], m.z[1], m.z[2], 0.0],
+            ],
+        }
+    }
+
+    fn new(viewport: Viewport) -> Self {
         //let tx = get_pixel_to_ndc_transform(w, false);
         //let ty = get_pixel_to_ndc_transform(h, true);
-        let tx = get_transform(0.0 + dx as f32, w as f32 + dx as f32, false);
-        let ty = get_transform(0.0 + dy as f32, h as f32 + dy as f32, true);
+        let tx = get_transform(viewport.x_from, viewport.x_upto, false);
+        let ty = get_transform(viewport.y_from, viewport.y_upto, true);
 
         use cgmath::SquareMatrix;
         let mut m = cgmath::Matrix3::identity();
@@ -65,6 +79,23 @@ impl ProjectionUniform {
                 [m.z[0], m.z[1], m.z[2], 0.0],
             ],
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Viewport {
+    pub x_from: f32,
+    pub x_upto: f32,
+    pub y_from: f32,
+    pub y_upto: f32,
+}
+
+impl Viewport {
+    pub fn translate(&mut self, dx: f32, dy: f32) {
+        self.x_from += dx;
+        self.x_upto += dx;
+        self.y_from += dy;
+        self.y_upto += dy;
     }
 }
 
@@ -119,9 +150,8 @@ impl MsaaPipeline {
         }
     }
 
-    pub fn set_transform(&self, dx: i32, dy: i32, w: u32, h: u32, queue: &wgpu::Queue) {
-        let projection_uniform = ProjectionUniform::new(w, h, -dx, -dy);
-
+    pub fn set_viewport(&self, viewport: Viewport, queue: &wgpu::Queue) {
+        let projection_uniform = ProjectionUniform::new(viewport);
         queue.write_buffer(
             &self.projection_buffer,
             0,
@@ -211,8 +241,8 @@ fn create_bundle(
 ) -> (wgpu::RenderBundle, wgpu::Buffer) {
     let w = config.width;
     let h = config.height;
-    let projection_uniform = ProjectionUniform::new(w, h, 10, 10);
 
+    let projection_uniform = ProjectionUniform::identity();
     let projection_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Projection Buffer"),
         contents: bytemuck::cast_slice(&[projection_uniform]),
@@ -433,9 +463,9 @@ impl Renderer {
         self.msaa_pipeline = Some(msaa_pipeline);
     }
 
-    pub fn set_transform(&self, dx: i32, dy: i32, w: u32, h: u32) {
+    pub fn set_viewport(&self, viewport: Viewport) {
         if let Some(msaa_pipeline) = self.msaa_pipeline.as_ref() {
-            msaa_pipeline.set_transform(dx, dy, w, h, &self.queue);
+            msaa_pipeline.set_viewport(viewport, &self.queue);
         }
     }
 
