@@ -1,3 +1,4 @@
+mod async_experiments;
 mod no_macros;
 mod style;
 mod svelte_like_styles;

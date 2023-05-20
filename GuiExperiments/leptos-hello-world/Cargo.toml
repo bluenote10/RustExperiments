@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+gloo-timers = { version = "0.2.6", features = ["futures"] }
 lazy_static = "1.4.0"
 leptos = "0.2.4"
 stylers = "0.3.1"
