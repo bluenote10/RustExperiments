@@ -3,6 +3,7 @@ use dashu_ratio::Relaxed;
 use fraction::{DynaFraction, Fraction};
 use num_rational::Ratio;
 use rand::prelude::*;
+use second_order_expansion::SOE;
 use std::time::Instant;
 
 #[derive(Clone, Copy)]
@@ -70,11 +71,46 @@ fn transform_dashu(scale: &VecDashu, offset: &VecDashu, v: &VecDashu) -> VecDash
     }
 }
 
+#[derive(Clone, Copy)]
+struct VecSOE {
+    x: SOE,
+    y: SOE,
+}
+
+fn transform_soe(scale: VecSOE, offset: VecSOE, v: VecSOE) -> VecSOE {
+    VecSOE {
+        x: scale.x * v.x + offset.x,
+        y: scale.y * v.y + offset.y,
+    }
+}
+
 fn criterion_benchmark(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
 
     let mut group = c.benchmark_group("transform");
     // group.sampling_mode(SamplingMode::Linear).sample_size(10);
+
+    group.bench_function("soe", |b| {
+        b.iter_custom(|iter| {
+            let scale = VecSOE {
+                x: SOE::from(rng.gen::<f64>()),
+                y: SOE::from(rng.gen::<f64>()),
+            };
+            let offset = VecSOE {
+                x: SOE::from(rng.gen::<f64>()),
+                y: SOE::from(rng.gen::<f64>()),
+            };
+            let v = VecSOE {
+                x: SOE::from(rng.gen::<f64>()),
+                y: SOE::from(rng.gen::<f64>()),
+            };
+            let now = Instant::now();
+            for _ in 0..iter {
+                black_box(transform_soe(scale, offset, v));
+            }
+            now.elapsed()
+        })
+    });
 
     group.bench_function("dashu", |b| {
         b.iter_custom(|iter| {
