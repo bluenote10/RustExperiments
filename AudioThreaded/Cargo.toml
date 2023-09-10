@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 cpal = "0.15.2"
+ringbuf = "0.3.3"
 rodio = "0.17.1"
