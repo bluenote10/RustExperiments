@@ -76,14 +76,26 @@ pub(crate) trait CpalDeviceExt {
 type AudioProducer = Producer<AudioFrame, Arc<SharedRb<AudioFrame, Vec<MaybeUninit<AudioFrame>>>>>;
 type AudioConsumer = Consumer<AudioFrame, Arc<SharedRb<AudioFrame, Vec<MaybeUninit<AudioFrame>>>>>;
 
+// It looks like with the default settings the ALSA callback can pull a whopping 38400
+// samples during its first call. In general we need a ring buffer size that is at least
+// as big as the maximum number of samples (modulo frames vs sample conversion) the callback
+// can pull. As long as the callback can pull such a huge number and it is more or less unclear
+// if it has an upper bound, we can only go for a huge buffer...
+const RING_BUF_SIZE: usize = 38400 * 2;
+
 impl CpalDeviceExt for Device {
     fn create_audio_stream_with_buffer(
         &self,
         format: SupportedStreamConfig,
     ) -> Result<(Stream, AudioProducer), BuildStreamError> {
         // Create the ring buffer and split it.
-        let ring_buffer = HeapRb::<AudioFrame>::new(1024);
-        let (producer, consumer) = ring_buffer.split();
+        let ring_buffer = HeapRb::<AudioFrame>::new(RING_BUF_SIZE);
+        let (mut producer, consumer) = ring_buffer.split();
+
+        // Pre-fill buffer with silence to avoid immediate buffer underruns.
+        for _ in 0..RING_BUF_SIZE {
+            let _ = producer.push(AudioFrame::new(0.0, 0.0));
+        }
 
         let error_callback = |err| eprintln!("an error occurred on output stream: {}", err);
 
@@ -143,6 +155,9 @@ where
                 cur_frame = Some(frame);
                 frame.left
             } else {
+                // Panic for debug purposes only.
+                // We could fallback to silence (leading to the typical underrun pops).
+                assert!(false, "buffer underrun");
                 Sample::EQUILIBRIUM
             }
         };
