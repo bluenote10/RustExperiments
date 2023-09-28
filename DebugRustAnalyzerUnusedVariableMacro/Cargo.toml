@@ -5,4 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
+
+
+[dev-dependencies]
+macrotest = "1.0.9"
+
+#
+# Docs:
+#
+# https://docs.rs/macrotest/latest/macrotest/
+#
+# To re-generate macros:
+# MACROTEST=overwrite cargo test
