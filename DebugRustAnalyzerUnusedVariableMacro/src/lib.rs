@@ -30,12 +30,12 @@ macro_rules! assemble_tree {
 
     // Patterns for 'child => { ... }' syntax
     (@iter_children, $base:expr, $child:expr => { $($children:tt)+ } $(,)?) => {
-        assemble_tree!( $child => { $($children)* }); // True recursion
-        $base.add_child($child);
+        let child = assemble_tree!( $child => { $($children)* }); // True recursion
+        $base.add_child(child);
     };
     (@iter_children, $base:expr, $child:expr => { $($children:tt)+ }, $($other:tt)+) => {
-        assemble_tree!( $child => { $($children)* }); // True recursion
-        $base.add_child($child);
+        let child = assemble_tree!( $child => { $($children)* }); // True recursion
+        $base.add_child(child);
         assemble_tree!( @iter_children, $base, $($other)*)
     };
 

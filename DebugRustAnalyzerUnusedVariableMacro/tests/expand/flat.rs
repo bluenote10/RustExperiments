@@ -17,18 +17,4 @@ pub fn main() {
             Node::new("d"),
         },
     );
-
-    assemble_tree!(
-        Node::new("a") => {
-            Node::new("b") => { Node::new("sub") },
-            Node::new("c"),
-        }
-    );
-
-    assemble_tree!(
-        Node::new("a") => {
-            Node::new("b"),
-            Node::new("c") => { Node::new("sub") },
-        }
-    );
 }
