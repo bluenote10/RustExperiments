@@ -11,7 +11,7 @@ impl Node {
 
 #[macro_export]
 macro_rules! assemble_tree {
-    ($base:expr => { $($other:tt)* } $(,)?) => {
+    ($base:expr => { $($other:tt)+ } $(,)?) => {
         {
             let base = $base;
             assemble_tree!( @iter_children, base, $($other)*);
@@ -40,18 +40,18 @@ macro_rules! assemble_tree {
     };
 
     // Support for empty braces
-    // (@iter_children, $base:expr, $child:expr => {} $(,)?) => {
-    //     $base.add_child($child);
-    // };
-    // (@iter_children, $base:expr, $child:expr => {}, $($other:tt)+) => {
-    //     $base.add_child($child);
-    //     assemble_tree!( @iter_children, $base, $($other)*)
-    // };
+    (@iter_children, $base:expr, $child:expr => {} $(,)?) => {
+        $base.add_child($child);
+    };
+    (@iter_children, $base:expr, $child:expr => {}, $($other:tt)+) => {
+        $base.add_child($child);
+        assemble_tree!( @iter_children, $base, $($other)*)
+    };
 
     // Support for empty braces at top-level
-    // ($base:expr => {} $(,)?) => {
-    //     $base
-    // };
+    ($base:expr => {} $(,)?) => {
+        $base
+    };
 
     // Support for single expressions
     ($base:expr $(,)?) => {
