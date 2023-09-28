@@ -1,7 +1,7 @@
 pub struct Node;
 
 impl Node {
-    pub fn new() -> Self {
+    pub fn new(_s: &'static str) -> Self {
         Node {}
     }
     pub fn add_child(&self, _child: Node) {
@@ -9,63 +9,52 @@ impl Node {
     }
 }
 
-macro_rules! assemble_tree_v1 {
-    ($base:expr => { $($other:tt)* }) => {
-        assemble_tree!( @recurse, $base, $($other)*)
-    };
-
-    // Patterns for 'child' syntax
-    (@recurse, $base:expr, $child:expr $(,)?) => {
-        $base.add_child($child)
-    };
-    (@recurse, $base:expr, $child:expr, $($other:tt)+) => {
-        $base.add_child($child);
-        assemble_tree!( @recurse, $base, $($other)*)
-    };
-
-    // Patterns for 'child => { ... }' syntax
-    (@recurse, $base:expr, $child:expr => { $($children:tt)* } $(,)?) => {
-        let temp = $child;
-        assemble_tree!( temp => { $($children)* });
-        $base.add_child(temp)
-    };
-    (@recurse, $base:expr, $child:expr => { $($children:tt)* }, $($other:tt)+) => {
-        let temp = $child;
-        assemble_tree!( temp => { $($children)* });
-        $base.add_child(temp);
-        assemble_tree!( @recurse, $base, $($other)*)
-    };
-}
-
 #[macro_export]
 macro_rules! assemble_tree {
     ($base:expr => { $($other:tt)* }) => {
         {
-            assemble_tree!( @recurse, $base, $($other)*);
+            let base = $base;
+            assemble_tree!( @iter_children, base, $($other)*);
+            base
         }
     };
 
     // Patterns for 'child' syntax
-    (@recurse, $base:expr, $child:expr $(,)?) => {
-        $base.add_child($child)
-    };
-    (@recurse, $base:expr, $child:expr, $($other:tt)+) => {
+    (@iter_children, $base:expr, $child:expr $(,)?) => {
         $base.add_child($child);
-        assemble_tree!( @recurse, $base, $($other)*)
+    };
+    (@iter_children, $base:expr, $child:expr, $($other:tt)+) => {
+        $base.add_child($child);
+        assemble_tree!( @iter_children, $base, $($other)*)
     };
 
     // Patterns for 'child => { ... }' syntax
-    (@recurse, $base:expr, $child:expr => { $($children:tt)* } $(,)?) => {
-        let base = $base;
-        let child = assemble_tree!( $child => { $($children)* });
-        base.add_child(child);
-        base
+    (@iter_children, $base:expr, $child:expr => { $($children:tt)+ } $(,)?) => {
+        assemble_tree!( $child => { $($children)* }); // True recursion
+        $base.add_child($child)
     };
-    (@recurse, $base:expr, $child:expr => { $($children:tt)* }, $($other:tt)+) => {
-        let base = $base;
-        let child = assemble_tree!( $child => { $($children)* });
-        base.add_child(child);
-        assemble_tree!( @recurse, $base, $($other)*);
-        base
+    (@iter_children, $base:expr, $child:expr => { $($children:tt)+ }, $($other:tt)+) => {
+        assemble_tree!( $child => { $($children)* }); // True recursion
+        $base.add_child($child);
+        assemble_tree!( @iter_children, $base, $($other)*)
+    };
+
+    // Support for empty braces
+    // (@iter_children, $base:expr, $child:expr => {} $(,)?) => {
+    //     $base.add_child($child);
+    // };
+    // (@iter_children, $base:expr, $child:expr => {}, $($other:tt)+) => {
+    //     $base.add_child($child);
+    //     assemble_tree!( @iter_children, $base, $($other)*)
+    // };
+
+    // Support for empty braces at top-level
+    // ($base:expr => {} $(,)?) => {
+    //     $base
+    // };
+
+    // Support for single expressions
+    ($base:expr $(,)?) => {
+        $base
     };
 }
