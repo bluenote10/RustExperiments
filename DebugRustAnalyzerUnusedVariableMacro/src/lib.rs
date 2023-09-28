@@ -11,7 +11,7 @@ impl Node {
 
 #[macro_export]
 macro_rules! assemble_tree {
-    ($base:expr => { $($other:tt)* }) => {
+    ($base:expr => { $($other:tt)* } $(,)?) => {
         {
             let base = $base;
             assemble_tree!( @iter_children, base, $($other)*);
@@ -31,7 +31,7 @@ macro_rules! assemble_tree {
     // Patterns for 'child => { ... }' syntax
     (@iter_children, $base:expr, $child:expr => { $($children:tt)+ } $(,)?) => {
         assemble_tree!( $child => { $($children)* }); // True recursion
-        $base.add_child($child)
+        $base.add_child($child);
     };
     (@iter_children, $base:expr, $child:expr => { $($children:tt)+ }, $($other:tt)+) => {
         assemble_tree!( $child => { $($children)* }); // True recursion

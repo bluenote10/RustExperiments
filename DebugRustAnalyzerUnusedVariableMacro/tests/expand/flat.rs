@@ -5,12 +5,11 @@ pub fn main() {
         Node::new("a") => {
             Node::new("b"),
             Node::new("c"),
-            Node::new("d"),
+            Node::new("d")
         }
     );
 
-    /*
-    // Top-level trailing comma doesn't work yet.
+    // Trailing comma
     assemble_tree!(
         Node::new("a") => {
             Node::new("b"),
@@ -18,5 +17,18 @@ pub fn main() {
             Node::new("d"),
         },
     );
-    */
+
+    assemble_tree!(
+        Node::new("a") => {
+            Node::new("b") => { Node::new("sub") },
+            Node::new("c"),
+        }
+    );
+
+    assemble_tree!(
+        Node::new("a") => {
+            Node::new("b"),
+            Node::new("c") => { Node::new("sub") },
+        }
+    );
 }
