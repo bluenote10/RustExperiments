@@ -23,7 +23,7 @@ macro_rules! assemble_tree {
     // Patterns for '.. children' syntax
     (@iter_children, $base:expr, .. $child_iter:expr $(,)?) => {
         for child in $child_iter {
-            $base.add_child(child)
+            $base.add_child(child);
         }
     };
     (@iter_children, $base:expr, .. $child_iter:expr, $($other:tt)+) => {

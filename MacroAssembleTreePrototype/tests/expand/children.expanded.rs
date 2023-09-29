@@ -5,7 +5,7 @@ pub fn main() {
     let _node: Node = {
         let base = Node::new("a");
         for child in children {
-            base.add_child(child)
+            base.add_child(child);
         }
         base
     };
@@ -13,7 +13,7 @@ pub fn main() {
     let _node: Node = {
         let base = Node::new("a");
         for child in children {
-            base.add_child(child)
+            base.add_child(child);
         }
         base
     };
@@ -23,7 +23,7 @@ pub fn main() {
         let child = {
             let base = Node::new("b");
             for child in children {
-                base.add_child(child)
+                base.add_child(child);
             }
             base
         };
@@ -38,7 +38,7 @@ pub fn main() {
             base.add_child(child);
         }
         for child in children_b {
-            base.add_child(child)
+            base.add_child(child);
         }
         base
     };
@@ -59,7 +59,7 @@ pub fn main() {
                 base.add_child(child);
             }
             for child in children_b {
-                base.add_child(child)
+                base.add_child(child);
             }
             base
         };
@@ -70,7 +70,7 @@ pub fn main() {
                 base.add_child(child);
             }
             for child in children_c {
-                base.add_child(child)
+                base.add_child(child);
             }
             base
         };
