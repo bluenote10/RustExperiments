@@ -1,0 +1,17 @@
+[package]
+name = "assemble_tree_poc"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dev-dependencies]
+macrotest = "1.0.9"
+
+#
+# Docs:
+#
+# https://docs.rs/macrotest/latest/macrotest/
+#
+# To re-generate macros:
+# MACROTEST=overwrite cargo test
