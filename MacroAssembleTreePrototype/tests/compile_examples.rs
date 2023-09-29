@@ -20,6 +20,11 @@ mod misc;
 #[path = "expand/misc.expanded.rs"]
 mod misc_expanded;
 
+#[path = "expand/move_semantics.rs"]
+mod move_semantics;
+#[path = "expand/move_semantics.expanded.rs"]
+mod move_semantics_expanded;
+
 #[path = "expand/nested4.rs"]
 mod nested4;
 #[path = "expand/nested4.expanded.rs"]

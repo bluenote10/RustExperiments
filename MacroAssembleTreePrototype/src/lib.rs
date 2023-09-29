@@ -8,6 +8,9 @@ impl Node {
     pub fn add_child(&self, _child: Node) {
         unimplemented!()
     }
+    pub fn share(&self) -> Self {
+        unimplemented!()
+    }
 }
 
 #[macro_export]
@@ -17,6 +20,12 @@ macro_rules! assemble_tree {
             let base = $base;
             assemble_tree!( @iter_children, base, $($other)*);
             base
+            // let base = &$base;
+            // assemble_tree!( @iter_children, base, $($other)*);
+            // base.share()
+            // let base = $base.share();
+            // assemble_tree!( @iter_children, base, $($other)*);
+            // base
         }
     };
 
