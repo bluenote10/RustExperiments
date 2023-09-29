@@ -5,6 +5,11 @@ mod as_expression;
 #[path = "expand/as_expression.expanded.rs"]
 mod as_expression_expanded;
 
+#[path = "expand/children.rs"]
+mod children;
+#[path = "expand/children.expanded.rs"]
+mod children_expanded;
+
 #[path = "expand/flat.rs"]
 mod flat;
 #[path = "expand/flat.expanded.rs"]

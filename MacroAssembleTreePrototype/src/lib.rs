@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Node;
 
 impl Node {
@@ -17,6 +18,19 @@ macro_rules! assemble_tree {
             assemble_tree!( @iter_children, base, $($other)*);
             base
         }
+    };
+
+    // Patterns for '.. children' syntax
+    (@iter_children, $base:expr, .. $child_iter:expr $(,)?) => {
+        for child in $child_iter {
+            $base.add_child(child)
+        }
+    };
+    (@iter_children, $base:expr, .. $child_iter:expr, $($other:tt)+) => {
+        for child in $child_iter {
+            $base.add_child(child);
+        }
+        assemble_tree!( @iter_children, $base, $($other)*)
     };
 
     // Patterns for 'child' syntax
