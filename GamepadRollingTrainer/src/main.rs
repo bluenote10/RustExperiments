@@ -56,7 +56,11 @@ impl StreakHandler {
             let first_time = *self.times.first().unwrap();
             let last_time = *self.times.last().unwrap();
             let delta = last_time.duration_since(first_time).unwrap();
-            let frequency = self.times.len() as f64 / delta.as_secs_f64();
+
+            // Note that the average delta is defined by "streak length minus 1", and
+            // we define the frequency based on it.
+            let avg_delta = delta.as_secs_f64() / ((self.times.len() - 1) as f64);
+            let frequency = 1.0 / avg_delta;
 
             let entry = self.best_deltas.entry(self.times.len());
             let is_new_best = match entry {
@@ -76,10 +80,10 @@ impl StreakHandler {
             };
 
             println!(
-                "Streak {}    total delta: {:6.1} ms     avg delta: {:6.1} ms   frequency: {:5.2} hz{}",
+                "Streak {}    total delta: {:8.3} ms     avg delta: {:8.3} ms   frequency: {:5.2} hz{}",
                 format!("{}", self.times.len()).bold().bright_blue(),
                 delta.as_secs_f64() * 1000.0,
-                delta.as_secs_f64() / self.times.len() as f64 * 1000.0,
+                avg_delta * 1000.0,
                 frequency,
                 if is_new_best {
                     " [NEW BEST]".bold().bright_green()
