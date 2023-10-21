@@ -1,6 +1,12 @@
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::BufReader;
 use std::time::{Duration, SystemTime};
 
+use colored::Colorize;
 use gilrs::{Button, Event, EventType, Gilrs};
+use rodio::{source::Source, Decoder, OutputStream};
 
 fn is_dpad_event(event_type: &EventType) -> bool {
     match event_type {
@@ -15,11 +21,15 @@ fn is_dpad_event(event_type: &EventType) -> bool {
 
 struct StreakHandler {
     times: Vec<SystemTime>,
+    best_deltas: HashMap<usize, f64>,
 }
 
 impl StreakHandler {
     fn new() -> Self {
-        Self { times: Vec::new() }
+        Self {
+            times: Vec::new(),
+            best_deltas: HashMap::new(),
+        }
     }
 
     fn handle_loop(&mut self, was_event: bool) {
@@ -38,20 +48,44 @@ impl StreakHandler {
         }
     }
 
-    fn report_streak(&self) {
+    fn report_streak(&mut self) {
         assert!(self.times.len() > 0);
         if self.times.len() == 1 {
-            println!("Streak of length 1");
+            println!("Streak {}", format!("1").bold().bright_blue());
         } else {
             let first_time = *self.times.first().unwrap();
             let last_time = *self.times.last().unwrap();
             let delta = last_time.duration_since(first_time).unwrap();
             let frequency = self.times.len() as f64 / delta.as_secs_f64();
+
+            let entry = self.best_deltas.entry(self.times.len());
+            let is_new_best = match entry {
+                Entry::Occupied(mut entry) => {
+                    let value = entry.get_mut();
+                    if delta.as_secs_f64() < *value {
+                        *value = delta.as_secs_f64();
+                        true
+                    } else {
+                        false
+                    }
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(delta.as_secs_f64());
+                    true
+                }
+            };
+
             println!(
-                "Streak of length {}; total delta: {:?}; frequency: {:.3}",
-                self.times.len(),
-                delta,
-                frequency
+                "Streak {}    total delta: {:6.1} ms     avg delta: {:6.1} ms   frequency: {:5.2} hz{}",
+                format!("{}", self.times.len()).bold().bright_blue(),
+                delta.as_secs_f64() * 1000.0,
+                delta.as_secs_f64() / self.times.len() as f64 * 1000.0,
+                frequency,
+                if is_new_best {
+                    " [NEW BEST]".bold().bright_green()
+                } else {
+                    "".normal()
+                }
             );
         }
     }
@@ -59,6 +93,11 @@ impl StreakHandler {
 
 fn main() {
     let verbose = false;
+
+    // Audio source: https://freesound.org/people/Breviceps/sounds/447910/
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let file = BufReader::new(File::open("plop.wav").unwrap());
+    let source = Decoder::new(file).unwrap().buffered();
 
     let mut gilrs = Gilrs::new().unwrap();
 
@@ -101,5 +140,11 @@ fn main() {
         };
 
         streak_handler.handle_loop(is_dpad_event);
+
+        if is_dpad_event {
+            stream_handle
+                .play_raw(source.clone().convert_samples())
+                .unwrap();
+        }
     }
 }
