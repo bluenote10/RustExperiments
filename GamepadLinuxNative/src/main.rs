@@ -1,11 +1,11 @@
-use input_linux::{AbsoluteEvent, EvdevHandle, Event, InputEvent};
+use input_linux::{AbsoluteEvent, EvdevHandle, Event, EventTime, InputEvent};
 use nix::libc::O_NONBLOCK;
 use std::fs::OpenOptions;
 use std::io::{self, ErrorKind};
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
 use std::path::Path;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 ///
 /// Inspired by:
@@ -26,6 +26,17 @@ use std::time::SystemTime;
 /// - https://technicallycompetent.com/joysticks-linux-joydev-evdev/
 /// - https://wiki.archlinux.org/title/Gamepad
 ///
+/// Resources on tweaking the polling rate:
+/// - https://wiki.archlinux.org/title/Mouse_polling_rate
+/// - https://superuser.com/questions/369826/increase-usb-polling-rate-across-all-devices-in-linux
+///
+/// Using `lsusb` and then `lsusb -vd 0079:0011` on the device ID shows that the polling
+/// rate should already be 10 ms.
+///
+/// This can also be confirmed with:
+/// - `sudo mount -t debugfs none /sys/kernel/debug` (https://en.wikipedia.org/wiki/Debugfs)
+/// - `sudo less /sys/kernel/debug/usb/devices`
+/// - and looking for the gamepad device there.
 
 fn main() -> io::Result<()> {
     let path = Path::new("/dev/input/event14"); // "/dev/input/js3"
@@ -54,20 +65,27 @@ fn main() -> io::Result<()> {
         std::str::from_utf8(&evdev_handle.physical_location().unwrap()).unwrap()
     );
 
-    let mut last_event_time: Option<SystemTime> = None;
+    let mut last_event_time: Option<(SystemTime, SystemTime)> = None;
     let verbose = false;
 
-    let mut handle_button_down = |event: Event| {
-        let curr_event_time = SystemTime::now();
-        if let Some(last_event_time) = last_event_time {
-            let delta = curr_event_time.duration_since(last_event_time).unwrap();
+    let mut handle_button_down = |event: AbsoluteEvent| {
+        let curr_event_time_external = SystemTime::now();
+        let curr_event_time_internal = into_system_time(&event.time);
+        if let Some((last_event_time_external, last_event_time_internal)) = last_event_time {
+            let delta_external = curr_event_time_external
+                .duration_since(last_event_time_external)
+                .unwrap();
+            let delta_internal = curr_event_time_internal
+                .duration_since(last_event_time_internal)
+                .unwrap();
             println!(
-                "delta: {:8.3} ms    button: {:?}",
-                delta.as_secs_f64() * 1000.0,
+                "delta (external): {:8.3} ms    delta (internal): {:8.3} ms    button: {:?}",
+                delta_external.as_secs_f64() * 1000.0,
+                delta_internal.as_secs_f64() * 1000.0,
                 event
             );
         }
-        last_event_time = Some(curr_event_time);
+        last_event_time = Some((curr_event_time_external, curr_event_time_internal));
     };
 
     loop {
@@ -76,9 +94,9 @@ fn main() -> io::Result<()> {
             if verbose {
                 println!("{:?}", event);
             }
-            if let Event::Absolute(absolute) = event {
-                if absolute.value == 0 || absolute.value == 255 {
-                    handle_button_down(event)
+            if let Event::Absolute(absolute_event) = event {
+                if absolute_event.value == 0 || absolute_event.value == 255 {
+                    handle_button_down(absolute_event)
                 }
             }
         }
@@ -112,4 +130,10 @@ where
         Err(err) if err.kind() == ErrorKind::WouldBlock => Ok(None),
         Err(err) => Err(err),
     }
+}
+
+fn into_system_time(event_time: &EventTime) -> SystemTime {
+    UNIX_EPOCH
+        + Duration::from_secs(event_time.seconds() as u64)
+        + Duration::from_micros(event_time.microseconds() as u64)
 }
