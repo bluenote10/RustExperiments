@@ -1,0 +1,15 @@
+[package]
+name = "basic-slider"
+version = "0.1.0"
+authors = ["Fabian Keller <github.100.fkeller@spamgourmet.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+dioxus = { version = "0.5", features = ["desktop"] }
+
+# Debug
+log = "0.4.19"
+dioxus-logger = "0.4.1"
