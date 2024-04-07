@@ -1,7 +1,7 @@
 [application]
 
 # App (Project) Name
-name = "basic-slider"
+name = "dioxus-samples"
 
 # Dioxus App Default Platform
 # desktop, web
@@ -16,7 +16,7 @@ asset_dir = "assets"
 [web.app]
 
 # HTML title tag content
-title = "basic-slider"
+title = "dioxus-samples"
 
 [web.watcher]
 
