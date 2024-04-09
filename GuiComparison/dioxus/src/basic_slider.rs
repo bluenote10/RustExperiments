@@ -5,6 +5,8 @@ use dioxus::prelude::*;
 #[component]
 pub fn BasicSlider() -> Element {
     let mut value = use_signal(|| 50_i32);
+    let mut frozen = use_signal(|| false);
+
     use_effect(move || log::info!("Count changed to {value}"));
 
     rsx! {
@@ -15,8 +17,19 @@ pub fn BasicSlider() -> Element {
                     r#type: "range",
                     value: "{value}",
                     oninput: move |event| {
-                        log::info!("Event: {event:?}");
-                        value.set(event.value().parse::<i32>().unwrap());
+                        if !frozen() {
+                            value.set(event.value().parse::<i32>().unwrap());
+                        }
+                    }
+                }
+            }
+            div {
+                "Frozen"
+                input {
+                    r#type: "checkbox",
+                    value: "{frozen}",
+                    oninput: move |event| {
+                        frozen.set(event.value().parse::<bool>().unwrap());
                     }
                 }
             }
