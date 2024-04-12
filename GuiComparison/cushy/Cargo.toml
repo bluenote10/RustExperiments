@@ -1,0 +1,10 @@
+[package]
+name = "cushy-samples"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+cushy = { git = "https://github.com/khonsulabs/cushy", rev = "5e266f1551d279b0967bbbd45b229bdfbbf1e7de" }
