@@ -3,6 +3,7 @@
 
 mod basic_reactivity;
 mod basic_slider;
+mod debug_slider;
 mod locked_sliders;
 
 use dioxus::prelude::*;
@@ -10,6 +11,7 @@ use log::LevelFilter;
 
 use basic_reactivity::ReactiveParent;
 use basic_slider::BasicSlider;
+use debug_slider::DebugSlider;
 use locked_sliders::LockedSliders;
 
 fn main() {
@@ -19,5 +21,5 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    rsx! { BasicSlider {} }
+    rsx! { DebugSlider {} }
 }
