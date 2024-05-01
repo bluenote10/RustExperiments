@@ -90,7 +90,7 @@ pub fn example_i32() {
         println!("thread 1: {}", x);
     });
     thread::spawn(move || {
-        println!("thread 1: {}", x);
+        println!("thread 2: {}", x);
     });
 }
 
@@ -103,7 +103,7 @@ pub fn example_i32_ref() {
         println!("thread 1: {}", x_ref);
     });
     thread::spawn(move || {
-        println!("thread 1: {}", x_ref);
+        println!("thread 2: {}", x_ref);
     });
 }
 */
@@ -120,8 +120,24 @@ pub fn example_i32_static() {
         // *x += 1; Of course, we are behind a &T reference and lack interior mutability.
     });
     thread::spawn(move || {
-        println!("thread 1: {}", x);
+        println!("thread 2: {}", x);
         // *x += 1; Of course, we are behind a &T reference and lack interior mutability.
+    });
+}
+
+pub fn example_i32_scoped_thread() {
+    // Alternatively a scoped thread can be used.
+    let x_orig = 0;
+    let x = &x_orig;
+    thread::scope(|s| {
+        s.spawn(move || {
+            println!("thread 1: {}", x);
+            // *x += 1; Of course, we are behind a &T reference and lack interior mutability.
+        });
+        s.spawn(move || {
+            println!("thread 2: {}", x);
+            // *x += 1; Of course, we are behind a &T reference and lack interior mutability.
+        });
     });
 }
 
@@ -134,7 +150,7 @@ pub fn example_i32_static_mut() {
         println!("thread 1: {}", x);
     });
     thread::spawn(move || {
-        println!("thread 1: {}", x);
+        println!("thread 2: {}", x);
     });
 }
 */
@@ -146,24 +162,47 @@ pub fn example_arc_i32() {
     // immutable, and no communication can happen.
     let x = Arc::new(0_i32);
 
-    {
+    thread::spawn({
         let x = x.clone();
-        thread::spawn(move || {
-            println!("{}", x);
+        move || {
+            println!("thread 1: {}", x);
             // *x += 1; Of course, Arc doesn't provide DerefMut, so no mutation possible
-        });
-    }
-    {
+        }
+    });
+
+    thread::spawn({
         let x = x.clone();
-        thread::spawn(move || {
-            println!("{}", x);
+        move || {
+            println!("thread 2: {}", x);
             // *x += 1; Of course, Arc doesn't provide DerefMut, so no mutation possible
-        });
-    }
+        }
+    });
 
     for _ in 0..10 {
         // *x += 1; Of course, Arc doesn't provide DerefMut, so no mutation possible
     }
+}
+
+pub fn example_arc_i32_scoped_thread() {
+    // Just to demonstrate that Arc is both Send and Sync: We can also pass a &Arc to
+    // the threads, if it lives long enough. This basically just skips increasing the
+    // refcount before passing it to the thread (the threads could still internally
+    // clone and increment the refcount). But I'm not sure if this pattern has much
+    // practical relevance, because if we have a reference with sufficient lifetime
+    // anyway we might as well just pass &T instead of &Arc<T>. The main reason to
+    // use Arc is the use case where the threads may outlive the outer scope.
+    let x_orig = Arc::new(0_i32);
+    let x = &x_orig;
+    thread::scope(|s| {
+        s.spawn(move || {
+            println!("thread 1: {}", x);
+            // *x += 1; Of course, we are behind a &T reference and lack interior mutability.
+        });
+        s.spawn(move || {
+            println!("thread 2: {}", x);
+            // *x += 1; Of course, we are behind a &T reference and lack interior mutability.
+        });
+    });
 }
 
 pub fn example_arc_atomic_i32() {
@@ -177,7 +216,7 @@ pub fn example_arc_atomic_i32() {
         thread::spawn(move || {
             sleep(Duration::from_millis(30));
             x.fetch_add(1, Ordering::SeqCst);
-            println!("[thread 1] {}", x.load(Ordering::SeqCst));
+            println!("thread 1: {}", x.load(Ordering::SeqCst));
         });
     }
     {
@@ -185,14 +224,14 @@ pub fn example_arc_atomic_i32() {
         thread::spawn(move || {
             sleep(Duration::from_millis(60));
             x.fetch_add(1, Ordering::SeqCst);
-            println!("[thread 2] {}", x.load(Ordering::SeqCst));
+            println!("thread 2: {}", x.load(Ordering::SeqCst));
         });
     }
 
     for _ in 0..10 {
         sleep(Duration::from_millis(10));
         x.fetch_add(1, Ordering::SeqCst);
-        println!("[main] {}", x.load(Ordering::SeqCst));
+        println!("main: {}", x.load(Ordering::SeqCst));
     }
 }
 
@@ -208,18 +247,18 @@ pub fn example_static_atomic_i32() {
     thread::spawn(move || {
         sleep(Duration::from_millis(30));
         x.fetch_add(1, Ordering::SeqCst);
-        println!("[thread 1] {}", x.load(Ordering::SeqCst));
+        println!("thread 1: {}", x.load(Ordering::SeqCst));
     });
     thread::spawn(move || {
         sleep(Duration::from_millis(60));
         x.fetch_add(1, Ordering::SeqCst);
-        println!("[thread 2] {}", x.load(Ordering::SeqCst));
+        println!("thread 2: {}", x.load(Ordering::SeqCst));
     });
 
     for _ in 0..10 {
         sleep(Duration::from_millis(10));
         x.fetch_add(1, Ordering::SeqCst);
-        println!("[main] {}", x.load(Ordering::SeqCst));
+        println!("main: {}", x.load(Ordering::SeqCst));
     }
 }
 
