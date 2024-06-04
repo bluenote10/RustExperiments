@@ -7,3 +7,5 @@ dist/
 .dmypy.json
 
 /venv/
+
+target/
