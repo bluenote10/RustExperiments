@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Script to create the venv initially.
+
+set -e
+
+cd $(dirname $0)/..
+
+if [[ -z "$VENV_DIR" ]]; then
+    echo "\$VENV_DIR must be set" 1>&2
+    exit 1
+fi
+
+uv venv "$VENV_DIR"
