@@ -10,3 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.21.1"
+
+[tool.maturin]
+python-source = "python"
+module-name = "my_project._lib_name"

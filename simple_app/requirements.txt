@@ -46,6 +46,8 @@ pathspec==0.12.1
     # via black
 pexpect==4.9.0
     # via ipython
+pip==24.0
+    # via -r requirements_dev.in
 platformdirs==4.2.2
     # via black
 pluggy==1.5.0
