@@ -1,4 +1,4 @@
-from ._simple_app import sum_as_string
+from ._simple_app import run, sum_as_string
 
 
 def regular_function():

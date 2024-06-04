@@ -9,4 +9,12 @@ name = "simple_app"
 crate-type = ["cdylib"]
 
 [dependencies]
+
+cushy = { version = "0.3", features = ["plotters"] }
+kludgine = "0.8.0"
+plotters = "0.3.6"
 pyo3 = "0.21.1"
+
+# https://github.com/khonsulabs/cushy/discussions/148
+[profile.dev.package."*"]
+opt-level = 2
