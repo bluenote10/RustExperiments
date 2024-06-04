@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Script to re-compile the requirements.
+
+set -e
+
+if [[ -z "$PROJECT_ROOT" ]]; then
+    echo "\$PROJECT_ROOT must be set" 1>&2
+    exit 1
+fi
+
+cd "$PROJECT_ROOT"
+
+uv pip compile requirements.in requirements_dev.in -U -o requirements.txt

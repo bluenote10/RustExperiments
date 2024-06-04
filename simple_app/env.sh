@@ -2,12 +2,12 @@
 # https://stackoverflow.com/questions/9901210/bash-source0-equivalent-in-zsh
 source_file_path=${BASH_SOURCE[0]:-${(%):-%x}}
 export PROJECT_ROOT=$(readlink -f $(dirname $source_file_path))
-echo "\$PROJECT_ROOT=$PROJECT_ROOT"
+echo "\$PROJECT_ROOT=${PROJECT_ROOT}"
 
-export VENV_DIR=${PROJECT_ROOT}/venv
-echo "\$VENV_DIR=$VENV_DIR"
+export VENV_DIR="${PROJECT_ROOT}/venv"
+echo "\$VENV_DIR=${VENV_DIR}"
 
-export PATH=${PROJECT_ROOT}/scripts:${PATH}
+export PATH="${PROJECT_ROOT}/scripts:${PATH}"
 
 if [ -e "$VENV_DIR/bin/activate" ]
 then

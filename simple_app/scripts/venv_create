@@ -4,11 +4,15 @@
 
 set -e
 
-cd $(dirname $0)/..
-
+if [[ -z "$PROJECT_ROOT" ]]; then
+    echo "\$PROJECT_ROOT must be set" 1>&2
+    exit 1
+fi
 if [[ -z "$VENV_DIR" ]]; then
     echo "\$VENV_DIR must be set" 1>&2
     exit 1
 fi
+
+cd "$PROJECT_ROOT"
 
 uv venv "$VENV_DIR"

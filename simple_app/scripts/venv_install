@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Script to re-install the requirements.
+
+set -e
+
+if [[ -z "$PROJECT_ROOT" ]]; then
+    echo "\$PROJECT_ROOT must be set" 1>&2
+    exit 1
+fi
+if [[ -z "$VENV_DIR" ]]; then
+    echo "\$VENV_DIR must be set" 1>&2
+    exit 1
+fi
+
+cd "$PROJECT_ROOT"
+
+# Normally we should run in a sourced env anyway, but it probably doesn't hurt
+# to guarantuee we are in the proper venv.
+. "$VENV_DIR"/bin/activate
+
+# uv pip install -r requirements.txt -e . --no-deps
+uv pip install -r requirements.txt --no-deps
