@@ -11,5 +11,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
+
+
 [tool.maturin]
+python-source = "python"
+module-name = "simple_app._simple_app"
 features = ["pyo3/extension-module"]

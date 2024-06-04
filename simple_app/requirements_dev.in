@@ -4,5 +4,4 @@ isort
 ipython
 maturin
 mypy
-pip
 pytest

@@ -19,5 +19,4 @@ cd "$PROJECT_ROOT"
 # to guarantuee we are in the proper venv.
 . "$VENV_DIR"/bin/activate
 
-# uv pip install -r requirements.txt -e . --no-deps
-uv pip install -r requirements.txt --no-deps
+uv pip install -r requirements.txt -e . --no-deps
