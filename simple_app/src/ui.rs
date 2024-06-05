@@ -35,19 +35,36 @@ where
 }
 
 fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
-    let depth = Dynamic::new(1).with_for_each(move |value| {
-        println!("value: {value}");
-        Python::with_gil(|py| {
-            let result = callback.call_bound(py, (*value,), None);
-            if let Err(e) = result {
-                println!("Error on calling callback: {}", e);
-            }
-        });
+    let depth = Dynamic::new(1).with_for_each({
+        let callback = callback.clone();
+        move |value| {
+            println!("value: {value}");
+            Python::with_gil(|py| {
+                let result = callback.call_bound(py, (*value,), None);
+                if let Err(e) = result {
+                    println!("Error on calling callback: {}", e);
+                }
+            });
+        }
     });
 
     let mut widget_list = WidgetList::new();
     for slider in sliders.iter() {
-        widget_list = widget_list.and::<String>(format!("{:?}", slider));
+        let callback = callback.clone();
+        let value = Dynamic::new(slider.init).with_for_each(move |value| {
+            println!("value: {value}");
+            Python::with_gil(|py| {
+                let result = callback.call_bound(py, (*value,), None);
+                if let Err(e) = result {
+                    println!("Error on calling callback: {}", e);
+                }
+            });
+        });
+
+        let slider = value.clone().slider_between(slider.min, slider.max);
+
+        widget_list = widget_list.and(slider);
+        //widget_list = widget_list.and::<String>(format!("{:?}", slider));
     }
 
     "Depth"

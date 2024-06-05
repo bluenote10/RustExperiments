@@ -3,9 +3,9 @@ use pyo3::types::PyList;
 
 #[derive(Debug)]
 pub struct Slider {
-    min: f64,
-    init: f64,
-    max: f64,
+    pub min: f64,
+    pub init: f64,
+    pub max: f64,
 }
 
 pub fn parse_sliders(py_sliders: &Bound<'_, PyList>) -> PyResult<Vec<Slider>> {
