@@ -51,14 +51,17 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
     let mut widget_list = WidgetList::new();
     for slider in sliders.iter() {
         let callback = callback.clone();
+        let py_slider = slider.py_slider.clone();
         let value = Dynamic::new(slider.init).with_for_each(move |value| {
             println!("value: {value}");
-            Python::with_gil(|py| {
-                let result = callback.call_bound(py, (*value,), None);
-                if let Err(e) = result {
-                    println!("Error on calling callback: {}", e);
-                }
+            let result = Python::with_gil(|py| -> PyResult<()> {
+                py_slider.setattr(py, "value", *value)?;
+                callback.call_bound(py, (), None)?;
+                Ok(())
             });
+            if let Err(e) = result {
+                println!("Error on calling callback: {}", e);
+            }
         });
 
         let slider = value.clone().slider_between(slider.min, slider.max);
@@ -66,6 +69,11 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
         widget_list = widget_list.and(slider);
         //widget_list = widget_list.and::<String>(format!("{:?}", slider));
     }
+
+    // Temporary work-around for initial callback call.
+    Python::with_gil(|py| {
+        callback.call_bound(py, (), None).unwrap();
+    });
 
     "Depth"
         .and(depth.clone().slider_between(1, 5))

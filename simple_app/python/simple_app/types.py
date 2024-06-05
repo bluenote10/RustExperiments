@@ -4,8 +4,8 @@ from dataclasses import dataclass
 @dataclass
 class Slider:
     min: float
-    init: float
+    value: float
     max: float
 
     def __post_init__(self):
-        assert self.min <= self.init <= self.max
+        assert self.min <= self.value <= self.max

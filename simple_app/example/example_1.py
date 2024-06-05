@@ -7,8 +7,9 @@ elements = [
 ]
 
 
-def callback(*args, **kwargs) -> None:
-    print(f"Callback called with: {args} / {kwargs}")
+def callback() -> None:
+    print(f"{slider1.value=}")
+    print(f"{slider2.value=}")
 
 
 simple_app.run(elements, callback)
