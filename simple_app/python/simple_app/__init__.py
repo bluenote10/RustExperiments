@@ -1,6 +1,8 @@
-from ._simple_app import run, sum_as_string
+from typing import Callable
+
+from . import _simple_app
+from .types import Slider
 
 
-def regular_function():
-    print("Hello, world")
-    print(sum_as_string(1, 2))
+def run(sliders: list[Slider], callback: Callable[[float], None]):
+    _simple_app.run(sliders, callback)

@@ -1,12 +1,15 @@
 import simple_app
-
-print(simple_app.__path__)
-print(dir(simple_app))
+from simple_app import Slider
 
 
 def callback(*args, **kwargs) -> None:
     print(f"Callback called with: {args} / {kwargs}")
 
 
-simple_app.regular_function()
-simple_app.run(["foo", "bar", "baz"], callback)
+simple_app.run(
+    [
+        Slider(0.0, 0.5, 1.0),
+        Slider(0.0, 20.0, 100.0),
+    ],
+    callback,
+)

@@ -5,7 +5,9 @@ use cushy::widgets::Canvas;
 use cushy::Run;
 use plotters::prelude::*;
 use pyo3::prelude::*;
-use pyo3::types::{PyFunction, PyList};
+use pyo3::types::PyFunction;
+
+use super::conversion::Slider;
 
 // This is copied from the sierpinski.rs example in the plotters repository.
 // This just demonstrates that any `plotters` code that renders to a
@@ -32,7 +34,7 @@ where
     Ok(())
 }
 
-fn plotters(names: &[String], callback: Py<PyFunction>) -> impl MakeWidget {
+fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
     let depth = Dynamic::new(1).with_for_each(move |value| {
         println!("value: {value}");
         Python::with_gil(|py| {
@@ -44,8 +46,8 @@ fn plotters(names: &[String], callback: Py<PyFunction>) -> impl MakeWidget {
     });
 
     let mut widget_list = WidgetList::new();
-    for name in names.iter() {
-        widget_list = widget_list.and::<&str>(name);
+    for slider in sliders.iter() {
+        widget_list = widget_list.and::<String>(format!("{:?}", slider));
     }
 
     "Depth"
@@ -63,16 +65,12 @@ fn plotters(names: &[String], callback: Py<PyFunction>) -> impl MakeWidget {
         .into_rows()
 }
 
-pub fn run_plotters(names: &Bound<'_, PyList>, callback: &Bound<'_, PyFunction>) {
-    let py = names.py();
-    let names: Vec<String> = names
-        .extract()
-        .expect(&format!("Failed to extract Vec<String> from: {:?}", names));
-
+pub fn run_ui(sliders: &[Slider], callback: &Bound<'_, PyFunction>) {
+    let py = callback.py();
     let callback = callback.clone().unbind();
 
     py.allow_threads(|| {
-        let result = plotters(&names, callback).run();
+        let result = ui_widget(sliders, callback).run();
         // TODO: Can this be turned into a Python exception?
         if let Err(e) = result {
             println!("Failed to run widget: {}", e);
