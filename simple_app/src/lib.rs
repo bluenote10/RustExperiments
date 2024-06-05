@@ -13,7 +13,7 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 #[pyfunction]
 fn run(names: &Bound<'_, PyList>, callback: &Bound<'_, PyFunction>) -> PyResult<()> {
     callback.call((1, 2), None)?;
-    run_plotters(names);
+    run_plotters(names, callback);
     Ok(())
 }
 
