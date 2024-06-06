@@ -1,5 +1,6 @@
 use cushy::value::{Destination, Dynamic, Source};
-use cushy::widget::{MakeWidget, WidgetList};
+use cushy::widget::MakeWidget;
+use cushy::widget::WidgetList;
 use cushy::widgets::slider::Slidable;
 use cushy::widgets::Canvas;
 use cushy::Run;
@@ -50,7 +51,6 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
         let py_slider = slider.py_slider.clone();
         let plots = plots.clone();
         let value = Dynamic::new(slider.init).with_for_each(move |value| {
-            println!("value: {value}");
             let result = Python::with_gil(|py| -> PyResult<()> {
                 py_slider.setattr(py, "value", *value)?;
                 let new_plots = callback
@@ -64,9 +64,15 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
             }
         });
 
-        let slider = value.clone().slider_between(slider.min, slider.max);
+        let label_row = slider
+            .name
+            .clone()
+            .small()
+            .and(value.map_each(|x| format!("{}", x)).small())
+            .into_columns();
 
-        widget_list = widget_list.and(slider);
+        let slider = value.clone().slider_between(slider.min, slider.max);
+        widget_list = widget_list.and(label_row.and(slider).into_rows().contain());
     }
 
     // Temporary work-around for initial callback call.

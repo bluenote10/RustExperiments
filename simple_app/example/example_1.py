@@ -4,9 +4,9 @@ import simple_app
 from simple_app import Plot, Slider
 
 elements = [
-    (slider_a := Slider(-10.0, 0.5, 10.0)),
-    (slider_b := Slider(-10.0, 0.5, 10.0)),
-    (slider_c := Slider(-10.0, 0.5, 10.0)),
+    (slider_a := Slider("a", -10.0, 0.5, 10.0)),
+    (slider_b := Slider("b", -10.0, 0.5, 10.0)),
+    (slider_c := Slider("c", -10.0, 0.5, 10.0)),
 ]
 
 

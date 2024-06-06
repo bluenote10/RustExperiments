@@ -5,6 +5,7 @@ import numpy as np
 
 @dataclass
 class Slider:
+    name: str
     min: float
     value: float
     max: float
