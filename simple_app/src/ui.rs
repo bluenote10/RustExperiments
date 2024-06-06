@@ -39,31 +39,9 @@ where
 }
 
 fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
-    let depth = Dynamic::new(1).with_for_each({
-        let callback = callback.clone();
-        move |value| {
-            println!("value: {value}");
-            Python::with_gil(|py| {
-                let result = callback
-                    .call_bound(py, (*value,), None)
-                    .and_then(|output| parse_output(py, output));
-                if let Err(e) = result {
-                    println!("Error on calling callback: {}", e);
-                }
-                /*
-                match result {
-                    Ok(output) => {
-                        parse_output(py, output)?;
-                    }
-                    Err(e) => {
-                        println!("Error on calling callback: {}", e);
-                    }
-                }
-                */
-            });
-        }
-    });
-
+    // TODO: Is there a better / more performant way to implement that? Apparently
+    // we need `PartialEq` for `set` and `Clone` for `get_tracking_redraw`, which
+    // both sound not particular efficient.
     let plots = Dynamic::new(Vec::<Plot>::new());
 
     let mut widget_list = WidgetList::new();
@@ -89,32 +67,32 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
         let slider = value.clone().slider_between(slider.min, slider.max);
 
         widget_list = widget_list.and(slider);
-        //widget_list = widget_list.and::<String>(format!("{:?}", slider));
     }
 
     // Temporary work-around for initial callback call.
-    Python::with_gil(|py| {
-        callback.call_bound(py, (), None).unwrap();
+    let _ = Python::with_gil(|py| -> PyResult<()> {
+        let new_plots = callback
+            .call_bound(py, (), None)
+            .and_then(|output| parse_output(py, output))?;
+        plots.set(new_plots);
+        Ok(())
     });
 
-    "Depth"
-        .and(depth.clone().slider_between(1, 5))
-        .and(
-            Canvas::new({
-                {
-                    let plots = plots.clone();
-                    move |context| {
-                        let plots = plots.get_tracking_redraw(context);
-                        if plots.len() > 0 {
-                            render_plot(&plots[0], &context.gfx.as_plot_area()).unwrap();
-                        }
-                    }
+    Canvas::new({
+        {
+            let plots = plots.clone();
+            move |context| {
+                let plots = plots.get_tracking_redraw(context);
+                // TODO: Support more plots...
+                if plots.len() > 0 {
+                    render_plot(&plots[0], &context.gfx.as_plot_area()).unwrap();
                 }
-            })
-            .expand(),
-        )
-        .and(widget_list.into_rows())
-        .into_rows()
+            }
+        }
+    })
+    .expand()
+    .and(widget_list.into_rows())
+    .into_rows()
 }
 
 pub fn run_ui(sliders: &[Slider], callback: &Bound<'_, PyFunction>) {
