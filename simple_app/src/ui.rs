@@ -39,7 +39,7 @@ where
     Ok(())
 }
 
-fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
+fn ui_widget(sliders: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget {
     // TODO: Is there a better / more performant way to implement that? Apparently
     // we need `PartialEq` for `set` and `Clone` for `get_tracking_redraw`, which
     // both sound not particular efficient.
@@ -47,13 +47,16 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
 
     let mut widget_list = WidgetList::new();
     for slider in sliders.iter() {
-        let callback = callback.clone();
+        let py_callback = py_callback.clone();
         let py_slider = slider.py_slider.clone();
         let plots = plots.clone();
-        let value = Dynamic::new(slider.init).with_for_each(move |value| {
+
+        // Temporary work-around for initial callback call.
+        // https://github.com/khonsulabs/cushy/issues/156#issuecomment-2152677089
+        let callback = move |value: &f64| {
             let result = Python::with_gil(|py| -> PyResult<()> {
                 py_slider.setattr(py, "value", *value)?;
-                let new_plots = callback
+                let new_plots = py_callback
                     .call_bound(py, (), None)
                     .and_then(|output| parse_callback_return(py, output))?;
                 if let Some(new_plots) = new_plots {
@@ -64,7 +67,11 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
             if let Err(e) = result {
                 println!("Error on calling callback: {}", e);
             }
-        });
+        };
+
+        let value = Dynamic::new(slider.init);
+        value.map_ref(&callback);
+        value.for_each(callback).persist();
 
         let label_row = slider
             .name
@@ -76,17 +83,6 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
         let slider = value.clone().slider_between(slider.min, slider.max);
         widget_list = widget_list.and(label_row.and(slider).into_rows().contain());
     }
-
-    // Temporary work-around for initial callback call.
-    let _ = Python::with_gil(|py| -> PyResult<()> {
-        let new_plots = callback
-            .call_bound(py, (), None)
-            .and_then(|output| parse_callback_return(py, output))?;
-        if let Some(new_plots) = new_plots {
-            plots.set(new_plots);
-        }
-        Ok(())
-    });
 
     Canvas::new({
         {
