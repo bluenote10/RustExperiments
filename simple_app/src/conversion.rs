@@ -40,8 +40,24 @@ pub struct Plot {
     pub y_limits: Range<f32>,
 }
 
-pub fn parse_output(py: Python<'_>, output: PyObject) -> PyResult<Vec<Plot>> {
-    let output = output.bind(py);
+pub fn parse_callback_return(py: Python<'_>, cb_return: PyObject) -> PyResult<Option<Vec<Plot>>> {
+    let cb_return = cb_return.bind(py);
+    /*    if cb_return.hasattr("__name__")?
+           && cb_return
+               .getattr("__name__")?
+               .eq::<PyString>("Outputs".try_into()?)?
+    */
+    if cb_return.get_type().name()? == "Outputs" {
+        return Ok(Some(parse_outputs(
+            py,
+            cb_return.getattr("outputs")?.into(),
+        )?));
+    }
+    Ok(None)
+}
+
+pub fn parse_outputs(py: Python<'_>, outputs: PyObject) -> PyResult<Vec<Plot>> {
+    let output = outputs.bind(py);
     let mut results = Vec::new();
     // TODO: This can be improved a lot. Most likely we could leverage the buffer
     // protocol (or https://github.com/PyO3/rust-numpy) to make this zero copy?

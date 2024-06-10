@@ -8,7 +8,7 @@ use plotters::prelude::*;
 use pyo3::prelude::*;
 use pyo3::types::PyFunction;
 
-use crate::conversion::{parse_output, Plot, Slider};
+use crate::conversion::{parse_callback_return, Plot, Slider};
 
 pub fn render_plot<A>(
     plot: &Plot,
@@ -55,8 +55,10 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
                 py_slider.setattr(py, "value", *value)?;
                 let new_plots = callback
                     .call_bound(py, (), None)
-                    .and_then(|output| parse_output(py, output))?;
-                plots.set(new_plots);
+                    .and_then(|output| parse_callback_return(py, output))?;
+                if let Some(new_plots) = new_plots {
+                    plots.set(new_plots);
+                }
                 Ok(())
             });
             if let Err(e) = result {
@@ -79,8 +81,10 @@ fn ui_widget(sliders: &[Slider], callback: Py<PyFunction>) -> impl MakeWidget {
     let _ = Python::with_gil(|py| -> PyResult<()> {
         let new_plots = callback
             .call_bound(py, (), None)
-            .and_then(|output| parse_output(py, output))?;
-        plots.set(new_plots);
+            .and_then(|output| parse_callback_return(py, output))?;
+        if let Some(new_plots) = new_plots {
+            plots.set(new_plots);
+        }
         Ok(())
     });
 

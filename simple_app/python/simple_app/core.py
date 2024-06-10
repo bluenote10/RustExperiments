@@ -1,8 +1,6 @@
-from typing import Callable, Sequence
-
 from . import _simple_app
-from .types import Plot, Slider
+from .types import Callback, Slider
 
 
-def run(sliders: list[Slider], callback: Callable[[], Sequence[Plot]]):
+def run(sliders: list[Slider], callback: Callback):
     _simple_app.run(sliders, callback)

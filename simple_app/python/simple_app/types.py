@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import Callable, Sequence
 
 import numpy as np
 
@@ -12,6 +15,15 @@ class Slider:
 
     def __post_init__(self) -> None:
         assert self.min <= self.value <= self.max
+
+
+Input = Slider  # Will eventually be a union type / base type of all supported outputs.
+
+
+class Inputs:
+    def __init__(self, *inputs: Input, callback: Callback):
+        self.inputs = inputs
+        self.callback = callback
 
 
 Data = np.ndarray | list[float]
@@ -39,3 +51,14 @@ def _use_or_infer(
         return float(np.min(data)), float(np.max(data))
     else:
         return limits
+
+
+Output = Plot  # Will eventually be a union type / base type of all supported outputs.
+
+
+class Outputs:
+    def __init__(self, *outputs: Output):
+        self.outputs = outputs
+
+
+Callback = Callable[[], Outputs | Inputs]
