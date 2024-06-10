@@ -8,7 +8,7 @@ use plotters::prelude::*;
 use pyo3::prelude::*;
 use pyo3::types::PyFunction;
 
-use crate::conversion::{parse_callback_return, Plot, Slider};
+use crate::conversion::{parse_callback_return, CallbackReturn, Plot, Slider};
 
 pub fn render_plot<A>(
     plot: &Plot,
@@ -56,11 +56,17 @@ fn ui_widget(sliders: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget
         let callback = move |value: &f64| {
             let result = Python::with_gil(|py| -> PyResult<()> {
                 py_slider.setattr(py, "value", *value)?;
-                let new_plots = py_callback
-                    .call_bound(py, (), None)
-                    .and_then(|output| parse_callback_return(py, output))?;
-                if let Some(new_plots) = new_plots {
-                    plots.set(new_plots);
+
+                let cb_return = py_callback.call_bound(py, (), None)?;
+                let cb_return = parse_callback_return(py, cb_return)?;
+
+                match cb_return {
+                    CallbackReturn::Outputs(new_plots) => {
+                        plots.set(new_plots);
+                    }
+                    CallbackReturn::Inputs(_, _) => {
+                        println!("Received nested inputs");
+                    }
                 }
                 Ok(())
             });

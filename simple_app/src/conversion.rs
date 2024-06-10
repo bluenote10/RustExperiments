@@ -1,7 +1,8 @@
 use std::ops::Range;
 
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyFunction, PyList};
 
 #[derive(Debug)]
 pub struct Slider {
@@ -12,24 +13,25 @@ pub struct Slider {
     pub py_slider: PyObject,
 }
 
-pub fn parse_sliders(py_sliders: &Bound<'_, PyList>) -> PyResult<Vec<Slider>> {
-    let mut sliders = Vec::new();
+impl<'py> FromPyObject<'py> for Slider {
+    fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        let name: String = obj.getattr("name")?.extract()?;
+        let min: f64 = obj.getattr("min")?.extract()?;
+        let init: f64 = obj.getattr("value")?.extract()?;
+        let max: f64 = obj.getattr("max")?.extract()?;
 
-    for py_slider in py_sliders {
-        let name: String = py_slider.getattr("name")?.extract()?;
-        let min: f64 = py_slider.getattr("min")?.extract()?;
-        let init: f64 = py_slider.getattr("value")?.extract()?;
-        let max: f64 = py_slider.getattr("max")?.extract()?;
-        sliders.push(Slider {
+        Ok(Slider {
             name,
             min,
             init,
             max,
-            py_slider: py_slider.clone().unbind(),
-        });
+            py_slider: obj.clone().unbind(),
+        })
     }
+}
 
-    Ok(sliders)
+pub fn parse_sliders(py_sliders: &Bound<'_, PyList>) -> PyResult<Vec<Slider>> {
+    py_sliders.extract()
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,20 +42,28 @@ pub struct Plot {
     pub y_limits: Range<f32>,
 }
 
-pub fn parse_callback_return(py: Python<'_>, cb_return: PyObject) -> PyResult<Option<Vec<Plot>>> {
+pub enum CallbackReturn {
+    Outputs(Vec<Plot>),
+    Inputs(Vec<Slider>, Py<PyFunction>),
+}
+
+pub fn parse_callback_return(py: Python<'_>, cb_return: PyObject) -> PyResult<CallbackReturn> {
     let cb_return = cb_return.bind(py);
-    /*    if cb_return.hasattr("__name__")?
-           && cb_return
-               .getattr("__name__")?
-               .eq::<PyString>("Outputs".try_into()?)?
-    */
     if cb_return.get_type().name()? == "Outputs" {
-        return Ok(Some(parse_outputs(
+        return Ok(CallbackReturn::Outputs(parse_outputs(
             py,
             cb_return.getattr("outputs")?.into(),
         )?));
+    } else if cb_return.get_type().name()? == "Inputs" {
+        let inputs = cb_return.getattr("inputs")?.extract()?;
+        let callback = cb_return
+            .getattr("callback")?
+            .downcast_into::<PyFunction>()?
+            .unbind();
+        return Ok(CallbackReturn::Inputs(inputs, callback));
+    } else {
+        return Err(PyValueError::new_err("Invalid callback return type."));
     }
-    Ok(None)
 }
 
 pub fn parse_outputs(py: Python<'_>, outputs: PyObject) -> PyResult<Vec<Plot>> {
