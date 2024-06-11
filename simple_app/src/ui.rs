@@ -1,3 +1,4 @@
+use cushy::figures::units::Px;
 use cushy::value::{Destination, Dynamic, Source, Switchable};
 use cushy::widget::MakeWidget;
 use cushy::widget::{Widget, WidgetList};
@@ -92,7 +93,12 @@ fn ui_widget(inputs: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget 
             }
         }
     });
-    content.expand().and(widget_list.into_rows()).into_rows()
+    widget_list
+        .into_rows()
+        .contain()
+        .width(Px::new(300))
+        .and(content.expand())
+        .into_columns()
 }
 
 fn plots_widget(plots: Vec<Plot>) -> impl Widget {
