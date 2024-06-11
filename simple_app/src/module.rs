@@ -7,7 +7,7 @@ use super::ui::run_ui;
 #[pyfunction]
 fn run(sliders: &Bound<'_, PyList>, callback: &Bound<'_, PyFunction>) -> PyResult<()> {
     let sliders = parse_sliders(sliders)?;
-    run_ui(&sliders, callback);
+    run_ui(&sliders, callback)?;
     Ok(())
 }
 

@@ -47,6 +47,17 @@ pub enum CallbackReturn {
     Inputs(Vec<Slider>, Py<PyFunction>),
 }
 
+impl PartialEq for CallbackReturn {
+    fn eq(&self, _other: &Self) -> bool {
+        // PartialEq is need for setting a `Dynamic`. In this use case, we probably want
+        // to assume that each invocation of the callback returns a different result (which
+        // is probably true any if an `PyFunction` is involved). Even if the returned value
+        // would be the same, there is no real harm in re-updating the UI. In terms of performance
+        // the evaluation of the callback itself probably outweighs the UI update anyway.
+        false
+    }
+}
+
 pub fn parse_callback_return(py: Python<'_>, cb_return: PyObject) -> PyResult<CallbackReturn> {
     let cb_return = cb_return.bind(py);
     if cb_return.get_type().name()? == "Outputs" {

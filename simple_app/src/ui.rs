@@ -1,10 +1,11 @@
-use cushy::value::{Destination, Dynamic, Source};
+use cushy::value::{Destination, Dynamic, Source, Switchable};
 use cushy::widget::MakeWidget;
-use cushy::widget::WidgetList;
+use cushy::widget::{Widget, WidgetList};
 use cushy::widgets::slider::Slidable;
-use cushy::widgets::Canvas;
+use cushy::widgets::{Canvas, Space};
 use cushy::Run;
 use plotters::prelude::*;
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyFunction;
 
@@ -39,17 +40,14 @@ where
     Ok(())
 }
 
-fn ui_widget(sliders: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget {
-    // TODO: Is there a better / more performant way to implement that? Apparently
-    // we need `PartialEq` for `set` and `Clone` for `get_tracking_redraw`, which
-    // both sound not particular efficient.
-    let plots = Dynamic::new(Vec::<Plot>::new());
+fn ui_widget(inputs: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget {
+    let cb_return_dynamic: Dynamic<Option<CallbackReturn>> = Dynamic::new(None);
 
     let mut widget_list = WidgetList::new();
-    for slider in sliders.iter() {
+    for slider in inputs.iter() {
         let py_callback = py_callback.clone();
         let py_slider = slider.py_slider.clone();
-        let plots = plots.clone();
+        let cb_return_dynamic = cb_return_dynamic.clone();
 
         // Temporary work-around for initial callback call.
         // https://github.com/khonsulabs/cushy/issues/156#issuecomment-2152677089
@@ -60,14 +58,7 @@ fn ui_widget(sliders: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget
                 let cb_return = py_callback.call_bound(py, (), None)?;
                 let cb_return = parse_callback_return(py, cb_return)?;
 
-                match cb_return {
-                    CallbackReturn::Outputs(new_plots) => {
-                        plots.set(new_plots);
-                    }
-                    CallbackReturn::Inputs(_, _) => {
-                        println!("Received nested inputs");
-                    }
-                }
+                cb_return_dynamic.set(Some(cb_return));
                 Ok(())
             });
             if let Err(e) = result {
@@ -90,32 +81,52 @@ fn ui_widget(sliders: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget
         widget_list = widget_list.and(label_row.and(slider).into_rows().contain());
     }
 
+    let content = cb_return_dynamic.switcher(|cb_result, _active| {
+        let Some(cb_result) = cb_result else {
+            return Space::clear().make_widget();
+        };
+        match cb_result {
+            CallbackReturn::Outputs(plots) => plots_widget(plots.clone()).make_widget(),
+            CallbackReturn::Inputs(inputs, callback) => {
+                ui_widget(&inputs, callback.clone()).make_widget()
+            }
+        }
+    });
+    content.expand().and(widget_list.into_rows()).into_rows()
+}
+
+fn plots_widget(plots: Vec<Plot>) -> impl Widget {
     Canvas::new({
-        {
-            let plots = plots.clone();
-            move |context| {
-                let plots = plots.get_tracking_redraw(context);
-                // TODO: Support more plots...
-                if plots.len() > 0 {
-                    render_plot(&plots[0], &context.gfx.as_plot_area()).unwrap();
-                }
+        move |context| {
+            // TODO: Support more plots...
+            if plots.len() > 0 {
+                render_plot(&plots[0], &context.gfx.as_plot_area()).unwrap();
             }
         }
     })
-    .expand()
-    .and(widget_list.into_rows())
-    .into_rows()
 }
 
-pub fn run_ui(sliders: &[Slider], callback: &Bound<'_, PyFunction>) {
+/*
+fn plots_widget(plots: Dynamic<Vec<Plot>>) -> impl Widget {
+    Canvas::new({
+        let plots = plots.clone();
+        move |context| {
+            let plots = plots.get_tracking_redraw(context);
+            // TODO: Support more plots...
+            if plots.len() > 0 {
+                render_plot(&plots[0], &context.gfx.as_plot_area()).unwrap();
+            }
+        }
+    })
+}
+*/
+
+pub fn run_ui(sliders: &[Slider], callback: &Bound<'_, PyFunction>) -> PyResult<()> {
     let py = callback.py();
     let callback = callback.clone().unbind();
 
     py.allow_threads(|| {
         let result = ui_widget(sliders, callback).run();
-        // TODO: Can this be turned into a Python exception?
-        if let Err(e) = result {
-            println!("Failed to run widget: {}", e);
-        }
-    });
+        result.map_err(|e| PyRuntimeError::new_err(format!("Failed to run widget: {}", e)))
+    })
 }
