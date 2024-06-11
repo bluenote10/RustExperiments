@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Sequence
+from typing import Callable
 
 import numpy as np
 
@@ -17,7 +17,18 @@ class Slider:
         assert self.min <= self.value <= self.max
 
 
-Input = Slider  # Will eventually be a union type / base type of all supported outputs.
+@dataclass
+class IntSlider:
+    name: str
+    min: int
+    value: int
+    max: int
+
+    def __post_init__(self) -> None:
+        assert self.min <= self.value <= self.max
+
+
+Input = Slider | IntSlider
 
 
 class Inputs:

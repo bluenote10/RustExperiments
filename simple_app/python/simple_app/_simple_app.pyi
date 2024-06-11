@@ -1,5 +1,5 @@
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
-from .types import Slider
+from .types import Input
 
-def run(sliders: list[Slider], callback: Callable[[], Any]): ...
+def run(inputs: Sequence[Input], callback: Callable[[], Any]): ...

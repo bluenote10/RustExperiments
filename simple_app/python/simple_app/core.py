@@ -1,6 +1,8 @@
+from typing import Sequence
+
 from . import _simple_app
-from .types import Callback, Slider
+from .types import Callback, Input
 
 
-def run(sliders: list[Slider], callback: Callback):
-    _simple_app.run(sliders, callback)
+def run(inputs: Sequence[Input], callback: Callback):
+    _simple_app.run(inputs, callback)

@@ -10,7 +10,7 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyFunction;
 
-use crate::conversion::{parse_callback_return, CallbackReturn, Plot, Slider};
+use crate::conversion::{parse_callback_return, CallbackReturn, Input, Plot};
 
 pub fn render_plot<A>(
     plot: &Plot,
@@ -41,45 +41,83 @@ where
     Ok(())
 }
 
-fn ui_widget(inputs: &[Slider], py_callback: Py<PyFunction>) -> impl MakeWidget {
+fn ui_widget(inputs: &[Input], py_callback: Py<PyFunction>) -> impl MakeWidget {
     let cb_return_dynamic: Dynamic<Option<CallbackReturn>> = Dynamic::new(None);
 
     let mut widget_list = WidgetList::new();
-    for slider in inputs.iter() {
-        let py_callback = py_callback.clone();
-        let py_slider = slider.py_slider.clone();
-        let cb_return_dynamic = cb_return_dynamic.clone();
+    for input in inputs.iter() {
+        // TODO: Clean up the duplication here...
+        if let Input::Slider(slider) = input {
+            let py_callback = py_callback.clone();
+            let py_slider = slider.py_slider.clone();
+            let cb_return_dynamic = cb_return_dynamic.clone();
 
-        // Temporary work-around for initial callback call.
-        // https://github.com/khonsulabs/cushy/issues/156#issuecomment-2152677089
-        let callback = move |value: &f64| {
-            let result = Python::with_gil(|py| -> PyResult<()> {
-                py_slider.setattr(py, "value", *value)?;
+            // Temporary work-around for initial callback call.
+            // https://github.com/khonsulabs/cushy/issues/156#issuecomment-2152677089
+            let callback = move |value: &f64| {
+                let result = Python::with_gil(|py| -> PyResult<()> {
+                    py_slider.setattr(py, "value", *value)?;
 
-                let cb_return = py_callback.call_bound(py, (), None)?;
-                let cb_return = parse_callback_return(py, cb_return)?;
+                    let cb_return = py_callback.call_bound(py, (), None)?;
+                    let cb_return = parse_callback_return(py, cb_return)?;
 
-                cb_return_dynamic.set(Some(cb_return));
-                Ok(())
-            });
-            if let Err(e) = result {
-                println!("Error on calling callback: {}", e);
-            }
-        };
+                    cb_return_dynamic.set(Some(cb_return));
+                    Ok(())
+                });
+                if let Err(e) = result {
+                    println!("Error on calling callback: {}", e);
+                }
+            };
 
-        let value = Dynamic::new(slider.init);
-        value.map_ref(&callback);
-        value.for_each(callback).persist();
+            let value = Dynamic::new(slider.init);
+            value.map_ref(&callback);
+            value.for_each(callback).persist();
 
-        let label_row = slider
-            .name
-            .clone()
-            .small()
-            .and(value.map_each(|x| format!("{}", x)).small())
-            .into_columns();
+            let label_row = slider
+                .name
+                .clone()
+                .small()
+                .and(value.map_each(|x| format!("{}", x)).small())
+                .into_columns();
 
-        let slider = value.clone().slider_between(slider.min, slider.max);
-        widget_list = widget_list.and(label_row.and(slider).into_rows().contain());
+            let slider = value.clone().slider_between(slider.min, slider.max);
+            widget_list = widget_list.and(label_row.and(slider).into_rows().contain());
+        } else if let Input::IntSlider(slider) = input {
+            let py_callback = py_callback.clone();
+            let py_slider = slider.py_slider.clone();
+            let cb_return_dynamic = cb_return_dynamic.clone();
+
+            // Temporary work-around for initial callback call.
+            // https://github.com/khonsulabs/cushy/issues/156#issuecomment-2152677089
+            let callback = move |value: &i64| {
+                let result = Python::with_gil(|py| -> PyResult<()> {
+                    py_slider.setattr(py, "value", *value)?;
+
+                    let cb_return = py_callback.call_bound(py, (), None)?;
+                    let cb_return = parse_callback_return(py, cb_return)?;
+
+                    cb_return_dynamic.set(Some(cb_return));
+                    Ok(())
+                });
+                if let Err(e) = result {
+                    println!("Error on calling callback: {}", e);
+                }
+            };
+
+            let value = Dynamic::new(slider.init);
+            value.map_ref(&callback);
+            value.for_each(callback).persist();
+
+            let label_row = slider
+                .name
+                .clone()
+                .small()
+                .and(value.map_each(|x| format!("{}", x)).small())
+                .into_columns();
+
+            let slider = value.clone().slider_between(slider.min, slider.max);
+            widget_list = widget_list.and(label_row.and(slider).into_rows().contain());
+        }
     }
 
     let content = cb_return_dynamic.switcher(|cb_result, _active| {
@@ -127,12 +165,15 @@ fn plots_widget(plots: Dynamic<Vec<Plot>>) -> impl Widget {
 }
 */
 
-pub fn run_ui(sliders: &[Slider], callback: &Bound<'_, PyFunction>) -> PyResult<()> {
+pub fn run_ui(sliders: &[Input], callback: &Bound<'_, PyFunction>) -> PyResult<()> {
     let py = callback.py();
     let callback = callback.clone().unbind();
 
     py.allow_threads(|| {
-        let result = ui_widget(sliders, callback).run();
+        let window = ui_widget(sliders, callback)
+            .into_window()
+            .titled("pico app");
+        let result = window.run();
         result.map_err(|e| PyRuntimeError::new_err(format!("Failed to run widget: {}", e)))
     })
 }

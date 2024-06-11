@@ -1,13 +1,13 @@
 import numpy as np
 
 import simple_app
-from simple_app import Inputs, Outputs, Plot, Slider
+from simple_app import Inputs, IntSlider, Outputs, Plot, Slider
 
 
 def main():
 
     elements = [
-        (master_slider := Slider("Number of sliders", 1, 5, 10)),
+        (master_slider := IntSlider("Number of sliders", 1, 5, 10)),
     ]
 
     def callback_1() -> Inputs:

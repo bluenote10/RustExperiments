@@ -5,20 +5,20 @@ use pyo3::prelude::*;
 use pyo3::types::{PyFunction, PyList};
 
 #[derive(Debug)]
-pub struct Slider {
+pub struct Slider<T> {
     pub name: String,
-    pub min: f64,
-    pub init: f64,
-    pub max: f64,
+    pub min: T,
+    pub init: T,
+    pub max: T,
     pub py_slider: PyObject,
 }
 
-impl<'py> FromPyObject<'py> for Slider {
+impl<'py, T: for<'a> FromPyObject<'a>> FromPyObject<'py> for Slider<T> {
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         let name: String = obj.getattr("name")?.extract()?;
-        let min: f64 = obj.getattr("min")?.extract()?;
-        let init: f64 = obj.getattr("value")?.extract()?;
-        let max: f64 = obj.getattr("max")?.extract()?;
+        let min: T = obj.getattr("min")?.extract()?;
+        let init: T = obj.getattr("value")?.extract()?;
+        let max: T = obj.getattr("max")?.extract()?;
 
         Ok(Slider {
             name,
@@ -30,8 +30,27 @@ impl<'py> FromPyObject<'py> for Slider {
     }
 }
 
-pub fn parse_sliders(py_sliders: &Bound<'_, PyList>) -> PyResult<Vec<Slider>> {
-    py_sliders.extract()
+pub enum Input {
+    Slider(Slider<f64>),
+    IntSlider(Slider<i64>),
+}
+
+impl<'py> FromPyObject<'py> for Input {
+    fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        if obj.get_type().name()? == "Slider" {
+            Ok(Input::Slider(obj.extract()?))
+        } else if obj.get_type().name()? == "IntSlider" {
+            Ok(Input::IntSlider(obj.extract()?))
+        } else {
+            return Err(PyValueError::new_err("Invalid callback return type."));
+        }
+    }
+}
+
+type Inputs = Vec<Input>;
+
+pub fn parse_inputs(py_inputs: &Bound<'_, PyList>) -> PyResult<Inputs> {
+    py_inputs.extract()
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -44,7 +63,7 @@ pub struct Plot {
 
 pub enum CallbackReturn {
     Outputs(Vec<Plot>),
-    Inputs(Vec<Slider>, Py<PyFunction>),
+    Inputs(Inputs, Py<PyFunction>),
 }
 
 impl PartialEq for CallbackReturn {
