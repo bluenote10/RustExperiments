@@ -1,4 +1,5 @@
-use cushy::widget::Widget;
+use cushy::figures::units::Px;
+use cushy::widget::{MakeWidget, Widget};
 use cushy::widgets::Canvas;
 use plotters::prelude::*;
 
@@ -14,6 +15,8 @@ pub fn plots_widget(plots: Vec<Plot>) -> impl Widget {
             }
         }
     })
+    .width(Px::new(400)..)
+    .height(Px::new(400)..)
 }
 
 fn render_plot<A>(
@@ -28,8 +31,8 @@ where
 
     let mut chart = ChartBuilder::on(&root)
         .margin(5)
-        .x_label_area_size(40)
-        .y_label_area_size(40)
+        .x_label_area_size(30)
+        .y_label_area_size(30)
         .build_cartesian_2d(plot.x_limits.clone(), plot.y_limits.clone())?;
 
     chart.configure_mesh().draw()?;

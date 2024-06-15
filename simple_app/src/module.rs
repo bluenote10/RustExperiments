@@ -1,12 +1,12 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyFunction, PyList};
 
-use super::conversion::parse_inputs;
+use super::conversion::Inputs;
 use super::ui::run_ui;
 
 #[pyfunction]
 fn run(inputs: &Bound<'_, PyList>, callback: &Bound<'_, PyFunction>) -> PyResult<()> {
-    let inputs = parse_inputs(inputs)?;
+    let inputs: Inputs = inputs.extract()?;
     run_ui(&inputs, callback)?;
     Ok(())
 }

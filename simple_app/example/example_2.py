@@ -15,7 +15,9 @@ def main():
         order = int(master_slider.value)  # TODO: IntSlider
         print(f"Polynomial order: {order}")
 
-        sliders = [Slider(f"coef_{i}", -10.0, 0.5, 10.0) for i in range(order + 1)]
+        sliders = [
+            Slider(f"coefficient of x^{i}", -10.0, 0.5, 10.0) for i in range(order + 1)
+        ]
 
         def callback_2() -> Outputs:
             xs = np.linspace(-10.0, 10.0, 100)

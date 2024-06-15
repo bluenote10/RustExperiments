@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyFunction, PyList};
+use pyo3::types::PyFunction;
 
 #[derive(Debug)]
 pub struct Slider<T> {
@@ -51,11 +51,7 @@ impl<'py> FromPyObject<'py> for Input {
     }
 }
 
-type Inputs = Vec<Input>;
-
-pub fn parse_inputs(py_inputs: &Bound<'_, PyList>) -> PyResult<Inputs> {
-    py_inputs.extract()
-}
+pub type Inputs = Vec<Input>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Plot {
