@@ -13,7 +13,11 @@ pub struct Slider<T> {
     pub py_slider: PyObject,
 }
 
-impl<'py, T: for<'a> FromPyObject<'a>> FromPyObject<'py> for Slider<T> {
+// https://github.com/PyO3/pyo3/discussions/3058
+impl<'py, T> FromPyObject<'py> for Slider<T>
+where
+    T: for<'a> FromPyObject<'a>,
+{
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         let name: String = obj.getattr("name")?.extract()?;
         let min: T = obj.getattr("min")?.extract()?;
