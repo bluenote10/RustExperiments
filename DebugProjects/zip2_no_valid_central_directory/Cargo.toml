@@ -1,0 +1,7 @@
+[package]
+name = "zip2_no_valid_central_directory"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zip = "2.0.0"
