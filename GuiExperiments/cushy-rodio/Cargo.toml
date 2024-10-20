@@ -1,0 +1,11 @@
+[package]
+name = "cushy-rodio"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cushy = "0.4.0"
+rodio = "0.19.0"
+
+[profile.dev.package."*"]
+opt-level = 2
