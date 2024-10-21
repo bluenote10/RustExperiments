@@ -1,0 +1,13 @@
+[package]
+name = "cushy-debug-snippets"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+# cushy = { version = "0.4.0", features = ["plotters"] }
+cushy = { git = "https://github.com/khonsulabs/cushy", rev = "f08b7064ec5effb93eb92bea5a3e0f9e71f13544", features = ["plotters"] }
+plotters = "0.3.7"
+
+[profile.dev.package."*"]
+opt-level = 2
