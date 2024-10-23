@@ -8,6 +8,7 @@ edition = "2021"
 # cushy = { version = "0.4.0", features = ["plotters"] }
 cushy = { git = "https://github.com/khonsulabs/cushy", rev = "f08b7064ec5effb93eb92bea5a3e0f9e71f13544", features = ["plotters"] }
 plotters = "0.3.7"
+rodio = "0.19.0"
 
 [profile.dev.package."*"]
 opt-level = 2

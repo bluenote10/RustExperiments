@@ -5,8 +5,7 @@ use std::time::Duration;
 use cushy::animation::ZeroToOne;
 use cushy::figures::units::Px;
 use cushy::figures::Zero;
-use cushy::value::Dynamic;
-use cushy::value::{Destination, Source};
+use cushy::value::{Destination, Dynamic, Source};
 use cushy::widget::{MakeWidget, Widget};
 use cushy::widgets::progress::{Progress, Progressable};
 use cushy::Run;
@@ -16,7 +15,7 @@ use rodio::{OutputStream, OutputStreamHandle, Sink};
 // Attempt to replicate web audio controls:
 // https://www.w3schools.com/html/tryit.asp?filename=tryhtml5_audio_all
 
-fn main() -> cushy::Result {
+pub fn main() -> cushy::Result {
     player_widget(220.0)
         .and(player_widget(440.0))
         .into_rows()
