@@ -23,3 +23,15 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# Try to optimize app size https://tauri.app/concept/size/
+
+[profile.dev]
+incremental = true # Compile your binary in smaller steps.
+strip = true # This wasn't in their recommendations, but I likely don't need debug symbols for now.
+
+[profile.release]
+codegen-units = 1 # Allows LLVM to perform better optimization.
+lto = true # Enables link-time-optimizations.
+opt-level = "s" # Prioritizes small binary size. Use `3` if you prefer speed.
+panic = "abort" # Higher performance by disabling panic handlers.
+strip = true # Ensures debug symbols are removed.
