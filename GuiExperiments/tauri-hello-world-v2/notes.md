@@ -28,6 +28,13 @@ An alternative may be to use release builds straight away:
 
 ```sh
 npm run tauri android build
-adb install src-tauri/gen/android/app/build/outputs/apk/arm64/release/app-arm64-release.apk
+adb install src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
 ```
 
+But that didn't work, because the apk is unsigned, and only debug apks are allows to be installed unsigned.
+
+Another alternative may be to just use:
+
+```sh
+npm run tauri android run
+```
